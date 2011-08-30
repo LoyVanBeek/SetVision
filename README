@@ -1,0 +1,5 @@
+This projects plays the game of Set. 
+It has logic to determine which cards make up a set and uses computer vision (via EmguCV and OpenCV) to detetmine which cards are on a table
+
+See these sites for info on the game:
+https://secure.wikimedia.org/wikipedia/en/wiki/Set_(game)
