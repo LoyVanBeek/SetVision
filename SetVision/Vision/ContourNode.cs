@@ -1,0 +1,59 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using Emgu.CV;
+using System.Drawing;
+
+namespace SetVision.Vision
+{
+    public class ContourNode
+    {
+        public List<ContourNode> Children;
+        public Contour<Point> Contour;
+        public ContourNode Parent;
+        public string Label;
+
+        public ContourNode(Contour<Point> node)
+        {
+            this.Contour = node;
+            
+            Children = new List<ContourNode>();
+            List<Contour<Point>> kids = new List<Contour<Point>>(ContourNode.GetChildren(this.Contour));
+            foreach(Contour<Point> kid in kids)
+            {
+                ContourNode kidnode = new ContourNode(kid);
+                kidnode.Parent = this;
+                Children.Add(kidnode);
+            }
+        }
+
+        public static IEnumerable<Contour<Point>> GetSiblings(Contour<Point> cont)
+        {
+            for (Contour<Point> _cont = cont;
+                _cont != null;
+                _cont = _cont.HNext)
+            {
+                yield return _cont;
+            }
+        }
+
+        public static IEnumerable<Contour<Point>> GetChildren(Contour<Point> cont)
+        {
+            for (Contour<Point> _cont = cont;
+                _cont != null;
+                _cont = _cont.HNext)
+            {
+                Contour<Point> child = _cont.VNext;
+                if (child != null)
+                {
+                    //yield return _cont.VNext;
+                    foreach(Contour<Point> sibling_of_child in GetSiblings(child))
+                    {
+                        yield return sibling_of_child;
+                    }
+                }
+            }
+        }
+    }
+}

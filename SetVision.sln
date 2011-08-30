@@ -1,0 +1,35 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual Studio 2008
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SetVision", "SetVision\SetVision.csproj", "{379BE235-9761-40A9-A8DC-5CC4731AA008}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests", "Tests\Tests.csproj", "{59E45D80-2F67-461B-BAF3-04E05C3B8624}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{07C2B1CC-62BD-4492-B54F-0CF995287CB9}"
+	ProjectSection(SolutionItems) = preProject
+		LocalTestRun.testrunconfig = LocalTestRun.testrunconfig
+		SetVision.vsmdi = SetVision.vsmdi
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(TestCaseManagementSettings) = postSolution
+		CategoryFile = SetWinner.vsmdi
+	EndGlobalSection
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{379BE235-9761-40A9-A8DC-5CC4731AA008}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{379BE235-9761-40A9-A8DC-5CC4731AA008}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{379BE235-9761-40A9-A8DC-5CC4731AA008}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{379BE235-9761-40A9-A8DC-5CC4731AA008}.Release|Any CPU.Build.0 = Release|Any CPU
+		{59E45D80-2F67-461B-BAF3-04E05C3B8624}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{59E45D80-2F67-461B-BAF3-04E05C3B8624}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{59E45D80-2F67-461B-BAF3-04E05C3B8624}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{59E45D80-2F67-461B-BAF3-04E05C3B8624}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

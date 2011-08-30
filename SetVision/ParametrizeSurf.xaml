@@ -1,0 +1,16 @@
+﻿<Window x:Class="SetVision.ParametrizeSurf"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="ParametrizeSurf" Height="300" Width="300">
+    <StackPanel>
+        <Image x:Name="resultImage"/>
+        <Button x:Name="button_Update" Click="button_Update_Click">Update</Button>
+        <Slider x:Name="slider_hessianThres" Minimum="1" Maximum="1000" Value="500"/>
+        <CheckBox x:Name="toggle_extended" IsChecked="True"/>
+        <Slider x:Name="slider_Neighbours" Minimum="1" Maximum="10" Value="2"/>
+        <Slider x:Name="slider_Emax" Minimum="1" Maximum="100" Value="20"/>
+        <Slider x:Name="slider_UniquenessThreshold" Minimum="0" Maximum="1" Value="0.8"/>
+        <Slider x:Name="slider_ScaleIncrement" Minimum="0" Maximum="10" Value="1.5"/>
+        <Slider x:Name="slider_RotBins" Minimum="2" Maximum="360" Value="20"/>
+    </StackPanel>
+</Window>
