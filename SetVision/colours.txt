@@ -1,0 +1,27 @@
+green: 	rgb(73, 115,93)		hsv(83, 115, 117)
+green: 	rgb(18, 94, 44)		hsv(71, 212, 94)
+red:	rgb(147, 78, 88)	hsv(152, 114, 147)
+red:	rgb(156, 34, 49)	hsv(172, 197, 156)
+purple:	rgb(81, 75, 98)		hsv(119, 76, 98)
+purple:	rgb(44,33,76)		hsv(126,151, 76)
+green:	rgb(80, 111,95)		hsv(80, 78, 112)
+green:	rgb(99,116,110)		hsv(80,40,117)	striped
+red:	rgb(154,86,96)		hsv(169,109,154)
+red:	rgb(154,96,106)		hsv(170,94,154) striped
+purple:	rgb(89,80,100)		hsv(131,56,100)
+purple:	rgb(98,91,105)		hsv(135,35,105) striped
+green:	rgb(79,107,92)		hsv(80,79,108)
+card:	rgb(117,122,123)	hsv(105,24,126)
+red:	rgb(143, 88,96)		hsv(153, 93, 143)
+card:	rgb(135,121,125)	hsv(129, 26, 136)
+purple:	rgb(83, 74, 90)		hsv(124, 57, 92)
+card:	rgb(108,102,106)	hsv(103, 23,110)
+
+red if color.Red > color.Green && color.Red > color.Blue?
+same for green?
+purple if green is lowest?
+
+Striped if saturation is low?
+
+card if rgb are about the same, and saturation is low
+

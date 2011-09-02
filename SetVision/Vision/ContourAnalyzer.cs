@@ -28,7 +28,7 @@ namespace SetVision.Vision
         {
             #region process image
             //Convert the image to grayscale and filter out the noise
-            Image<Gray, Byte> gray = table.Convert<Gray, Byte>().PyrDown().PyrDown();//.PyrUp(); //this makes the image blurry :-(
+            Image<Gray, Byte> gray = table.Convert<Gray, Byte>();
 
             Gray cannyThreshold = new Gray(180);
             Gray cannyThresholdLinking = new Gray(120);
@@ -70,11 +70,11 @@ namespace SetVision.Vision
 
             ContourNode tree = new ContourNode(contours);
             LabelTree(tree);
+            ColorizeTree(tree, table);
 
             #region draw
-            table = table.PyrDown().PyrDown();
 
-            DrawTree(tree, table);
+            DrawContours(tree, table);
             ImageViewer.Show(table);
             #endregion
             return new Dictionary<Card, Point>();
@@ -118,7 +118,10 @@ namespace SetVision.Vision
         #region actual labels
         private bool IsDiamond(ContourNode node)
         {
-            if (node.Parent != null && node.Parent.Label == "Card")
+            bool inCard = node.Parent != null &&
+                   (node.Parent.Label == "Card" ||
+                       node.Parent.Label == "Diamond");
+            if (inCard)
             {
                 using (MemStorage storage = new MemStorage())
                 {
@@ -143,7 +146,10 @@ namespace SetVision.Vision
 
         private bool IsOval(ContourNode node)
         {
-            if (node.Parent != null && node.Parent.Label == "Card")
+            bool inCard = node.Parent != null &&
+                   (node.Parent.Label == "Card" ||
+                       node.Parent.Label == "Oval");
+            if (inCard)
             {
                 #region sharp
                 //An oval doesn't have sharp angles
@@ -189,7 +195,9 @@ namespace SetVision.Vision
 
         private bool IsSquiggle(ContourNode node)
         {
-            bool inCard = node.Parent != null && node.Parent.Label == "Card";
+            bool inCard = node.Parent != null && 
+                (node.Parent.Label == "Card" ||
+                    node.Parent.Label == "Squiggle");
             bool convex = true;
 
             if (inCard)
@@ -237,7 +245,15 @@ namespace SetVision.Vision
 
         private bool IsCard(ContourNode node)
         {
-            bool area = node.Contour.Area > 25000;
+            bool area = node.Contour.Area > 5000;
+            MCvBox2D bounds = node.Contour.GetMinAreaRect();
+            float ratio = 
+                ((bounds.size.Width / bounds.size.Height) 
+                + 
+                (bounds.size.Height / bounds.size.Width)); 
+            //ratio is supposed to be 2.16667
+
+            bool ratioOK = (ratio > 2.0 && ratio < 2.3);
             //#if DEBUG
             //if (area)
             //{
@@ -248,12 +264,13 @@ namespace SetVision.Vision
             //    ShowContour(node.Contour, new Image<Bgr, Byte>(900, 900), "");
             //}
             //#endif
-            return area;
+            return ratioOK && area;
             
         }
         #endregion
 
-        private void DrawTree(ContourNode node, Image<Bgr, Byte> canvas, System.Drawing.Color color)
+        #region drawing
+        private void DrawContours(ContourNode node, Image<Bgr, Byte> canvas, System.Drawing.Color color)
         {
             Bgr _color = new Bgr(System.Drawing.Color.Red);
 
@@ -271,11 +288,11 @@ namespace SetVision.Vision
                         );
 	            }
 
-                DrawTree(child, canvas, color);
+                DrawContours(child, canvas, color);
             }
         }
 
-        private void DrawTree(ContourNode node, Image<Bgr, Byte> canvas)
+        private void DrawContours(ContourNode node, Image<Bgr, Byte> canvas)
         {
             #region color
             Random rnd = new Random(node.Contour.Ptr.ToInt32());
@@ -296,7 +313,7 @@ namespace SetVision.Vision
                         );
                 }
 
-                DrawTree(child, canvas);
+                DrawContours(child, canvas);
             }
         }
 
@@ -308,5 +325,114 @@ namespace SetVision.Vision
             canvas.DrawPolyline(contour.ToArray(), true, new Bgr(255, 255, 255), 1);
             ImageViewer.Show(canvas, message);
         }
+        #endregion
+
+        #region color
+        private void ColorizeTree(ContourNode tree, Image<Bgr, Byte> image)
+        {
+            ColorizeNode(tree, image);
+            foreach (ContourNode child in tree.Children)
+            {
+                ColorizeNode(child, image);
+                ColorizeTree(child, image);
+            }
+        }
+        private void ColorizeNode(ContourNode node, Image<Bgr, Byte> image)
+        {
+            if (!String.IsNullOrEmpty(node.Label)
+                && node.Contour.Area > 100
+                && ((node.Label == "Squiggle")
+                    || (node.Label == "Diamond")
+                    || (node.Label == "Oval")))
+            {
+                CardColor color = RecognizeColor(image, node.Contour);
+                node.Color = color;
+            }
+        }
+
+        private CardColor RecognizeColor(Image<Bgr, Byte> _image, Contour<Point> contour)
+        {
+            /* Set the contour as the ROI of the image
+             * Make an empty image on which you fill the inner of the contour. This is the mask. 
+             * Now, AND-the mask with the image. 
+             * Calculate the average color of the image, for each channel. 
+             * 
+             * Then, do some thresholding on RGB and/or HSV. The values can be got from paint. 
+             * 
+             */
+            #region extract color
+            Image<Bgr, Byte> image = _image;
+            Image<Gray, Byte> mask = image.Convert<Gray, Byte>();
+            mask.SetZero();
+            mask.Draw(contour, new Gray(255), new Gray(0), 2, -1);
+
+            mask.Erode(1);
+
+            Image<Bgr, Byte> rgbMask = new Image<Bgr, byte>(new Image<Gray, byte>[] { mask, mask, mask });
+
+            Image<Bgr, Byte> focusBgr = image.And(new Bgr(255, 255, 255), mask);
+            Image<Hsv, Byte> focusHsv = image.And(new Bgr(255, 255, 255), mask).Convert<Hsv, Byte>();
+            Bgr avgBgr = new Bgr();
+            MCvScalar scr1 = new MCvScalar();
+            focusBgr.AvgSdv(out avgBgr, out scr1, mask);
+
+            Hsv avgHsv = new Hsv();
+            MCvScalar scr2 = new MCvScalar();
+            focusHsv.AvgSdv(out avgHsv, out scr2, mask);
+
+            #endregion
+
+            CardColor color = CardColor.White;
+            #region classify
+            if(avgHsv.Satuation < 30)
+            {
+                color = CardColor.White;
+            }
+            else if (avgBgr.Red > avgBgr.Blue && avgBgr.Red > avgBgr.Green)
+            {
+                color = CardColor.Red;
+            }
+            else if (avgBgr.Green > avgBgr.Blue && avgBgr.Green > avgBgr.Red)
+            {
+                color = CardColor.Green;
+            }
+            else if (avgBgr.Green < avgBgr.Blue && avgBgr.Green < avgBgr.Red)
+            {
+                color = CardColor.Purple;
+            }
+            //else if (avgHsv.Satuation < 50 && avgHsv.Satuation > 30)
+            //{
+            //    fill = Fill.Dashed;
+            //}
+            else
+            {
+                color = CardColor.White;
+                //throw new Exception("Could not determine colors of the contour");
+            }
+            #endregion
+
+            #region debug
+#if DEBUG
+            Image<Bgr, Byte> debug = new Image<Bgr, Byte>(250, 200);
+            debug.SetValue(avgBgr);
+            string bgrstr =
+                    ((int)avgBgr.Red).ToString() + ","
+                + ((int)avgBgr.Green).ToString() + ","
+                + ((int)avgBgr.Blue).ToString();
+
+            string hsvstr =
+                    ((int)avgHsv.Hue).ToString() + ","
+                + ((int)avgHsv.Satuation).ToString() + ","
+                + ((int)avgHsv.Value).ToString();
+
+            debug = debug.ConcateHorizontal(focusBgr);
+            //debug = debug.ConcateHorizontal(rgbMask);
+            ImageViewer.Show(debug, "rgb(" + bgrstr + ") hsv(" + hsvstr + ")"+"Classified as "+color.ToString());
+            #endif
+            #endregion
+
+            return color;
+        }
+        #endregion
     }
 }

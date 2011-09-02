@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using Emgu.CV;
 using System.Drawing;
+using SetVision.Gamelogic;
 
 namespace SetVision.Vision
 {
@@ -13,6 +14,8 @@ namespace SetVision.Vision
         public Contour<Point> Contour;
         public ContourNode Parent;
         public string Label;
+        public CardColor Color;
+        public Fill Fill;
 
         public ContourNode(Contour<Point> node)
         {

@@ -72,9 +72,9 @@ namespace Tests
         {
             Logic_Accessor target = new Logic_Accessor();
             List<Card> possible_set = new List<Card>();
-            possible_set.Add(new Card(Color.Red, Shape.Diamond, Fill.Dashed, 1));
-            possible_set.Add(new Card(Color.Red, Shape.Diamond, Fill.Dashed, 2));
-            possible_set.Add(new Card(Color.Red, Shape.Diamond, Fill.Dashed, 3));
+            possible_set.Add(new Card(CardColor.Red, Shape.Diamond, Fill.Dashed, 1));
+            possible_set.Add(new Card(CardColor.Red, Shape.Diamond, Fill.Dashed, 2));
+            possible_set.Add(new Card(CardColor.Red, Shape.Diamond, Fill.Dashed, 3));
             bool expected = true;
             bool actual;
             actual = target.IsSet(possible_set);
@@ -82,9 +82,9 @@ namespace Tests
 
             Logic_Accessor target2 = new Logic_Accessor();
             List<Card> possible_set2 = new List<Card>();
-            possible_set2.Add(new Card(Color.Red, Shape.Diamond, Fill.Dashed, 1));
-            possible_set2.Add(new Card(Color.Green, Shape.Diamond, Fill.Dashed, 2));
-            possible_set2.Add(new Card(Color.Red, Shape.Diamond, Fill.Dashed, 3));
+            possible_set2.Add(new Card(CardColor.Red, Shape.Diamond, Fill.Dashed, 1));
+            possible_set2.Add(new Card(CardColor.Green, Shape.Diamond, Fill.Dashed, 2));
+            possible_set2.Add(new Card(CardColor.Red, Shape.Diamond, Fill.Dashed, 3));
             bool expected2 = false;
             bool actual2;
             actual2 = target2.IsSet(possible_set2);
@@ -97,9 +97,9 @@ namespace Tests
         {
             Logic_Accessor target = new Logic_Accessor();
             List<Card> possible_set = new List<Card>();
-            possible_set.Add(new Card(Color.Red, Shape.Diamond, Fill.Dashed, 1));
-            possible_set.Add(new Card(Color.Green, Shape.Diamond, Fill.Dashed, 2));
-            possible_set.Add(new Card(Color.Red, Shape.Diamond, Fill.Dashed, 3));
+            possible_set.Add(new Card(CardColor.Red, Shape.Diamond, Fill.Dashed, 1));
+            possible_set.Add(new Card(CardColor.Green, Shape.Diamond, Fill.Dashed, 2));
+            possible_set.Add(new Card(CardColor.Red, Shape.Diamond, Fill.Dashed, 3));
             bool expected = false;
             bool actual;
             actual = target.IsSet(possible_set);

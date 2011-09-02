@@ -86,3 +86,5 @@ D:\Development\OpenCV\SetVision\Tests\bin\Debug\zh-CN\Emgu.CV.UI.resources.dll
 D:\Development\OpenCV\SetVision\Tests\bin\Debug\zh-CN\ZedGraph.resources.dll
 D:\Development\OpenCV\SetVision\Tests\bin\Debug\SetVision_Accessor.dll
 D:\Development\OpenCV\SetVision\Tests\bin\Debug\SetVision_Accessor.pdb
+D:\Development\OpenCV\SetVision\Tests\bin\Debug\images\scene3.jpg
+D:\Development\OpenCV\SetVision\Tests\bin\Debug\images\scene4.jpg

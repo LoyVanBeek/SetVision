@@ -5,11 +5,12 @@ using System.Text;
 
 namespace SetVision.Gamelogic
 {
-    public enum Color
+    public enum CardColor
     {
         Purple,
         Green,
-        Red
+        Red,
+        White
     }
 
     public enum Shape
@@ -28,12 +29,12 @@ namespace SetVision.Gamelogic
 
     public class Card
     {
-        public Color Color { get; private set; }
+        public CardColor Color { get; private set; }
         public Shape Shape { get; private set; }
         public Fill Fill { get; private set; }
         public int Count { get; private set; }
 
-        public Card(Color color, Shape shape, Fill fill, int count)
+        public Card(CardColor color, Shape shape, Fill fill, int count)
         {
             this.Color = color;
             this.Shape = shape;

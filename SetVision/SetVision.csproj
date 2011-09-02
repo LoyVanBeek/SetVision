@@ -170,6 +170,12 @@
     <Content Include="images\scene2.jpg">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="images\scene3.jpg">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="images\scene4.jpg">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="images\shapes.jpg">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

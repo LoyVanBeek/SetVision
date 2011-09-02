@@ -14,7 +14,7 @@ namespace SetVision.Gamelogic
         public List<Card> GenerateCards()
         {
             List<Card> cards = new List<Card>();
-            foreach (Color color in Enum.GetValues(typeof(Color)))
+            foreach (CardColor color in Enum.GetValues(typeof(CardColor)))
             {
                 foreach (Fill fill in Enum.GetValues(typeof(Fill)))
                 {
