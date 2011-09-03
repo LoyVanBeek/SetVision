@@ -16,6 +16,7 @@ namespace SetVision.Vision
         public string Label;
         public CardColor Color;
         public Fill Fill;
+        public IImage image;
 
         public ContourNode(Contour<Point> node)
         {

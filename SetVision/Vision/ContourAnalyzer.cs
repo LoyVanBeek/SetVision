@@ -70,10 +70,14 @@ namespace SetVision.Vision
 
             ContourNode tree = new ContourNode(contours);
             LabelTree(tree);
+
+            StripDoubles(tree);
+
             ColorizeTree(tree, table);
 
             #region draw
 
+            TreeViz.VizualizeTree(tree);
             DrawContours(tree, table);
             ImageViewer.Show(table);
             #endregion
@@ -345,12 +349,12 @@ namespace SetVision.Vision
                     || (node.Label == "Diamond")
                     || (node.Label == "Oval")))
             {
-                CardColor color = RecognizeColor(image, node.Contour);
+                CardColor color = RecognizeColor(image, node);
                 node.Color = color;
             }
         }
 
-        private CardColor RecognizeColor(Image<Bgr, Byte> _image, Contour<Point> contour)
+        private CardColor RecognizeColor(Image<Bgr, Byte> _image, ContourNode node)
         {
             /* Set the contour as the ROI of the image
              * Make an empty image on which you fill the inner of the contour. This is the mask. 
@@ -360,6 +364,8 @@ namespace SetVision.Vision
              * Then, do some thresholding on RGB and/or HSV. The values can be got from paint. 
              * 
              */
+            Contour<Point> contour = node.Contour;
+
             #region extract color
             Image<Bgr, Byte> image = _image;
             Image<Gray, Byte> mask = image.Convert<Gray, Byte>();
@@ -427,12 +433,51 @@ namespace SetVision.Vision
 
             debug = debug.ConcateHorizontal(focusBgr);
             //debug = debug.ConcateHorizontal(rgbMask);
-            ImageViewer.Show(debug, "rgb(" + bgrstr + ") hsv(" + hsvstr + ")"+"Classified as "+color.ToString());
+            //ImageViewer.Show(debug, "rgb(" + bgrstr + ") hsv(" + hsvstr + ")"+"Classified as "+color.ToString());
             #endif
             #endregion
+
+            focusBgr.ROI = contour.GetMinAreaRect().MinAreaRect();
+            node.image = focusBgr;
 
             return color;
         }
         #endregion
+
+        /// <summary>
+        /// Removes nodes with the same label and area from the tree, stripping the node out the tree and 
+        /// connecting its children to its parent (A-B-C) to (A-C)
+        /// </summary>
+        /// <param name="tree"></param>
+        public void StripDoubles(ContourNode tree)
+        {
+            if (tree.Parent != null)
+            {
+                if ((tree.Parent.Label == tree.Label)
+                    &&
+                    ((tree.Parent.Contour.Area <= (tree.Contour.Area+tree.Contour.Perimeter)) &&
+                    (tree.Parent.Contour.Area >= tree.Contour.Area)))
+                {
+                    //The node called tree is a double:
+                    foreach (ContourNode child in tree.Children)
+                    {
+                        child.Parent = tree.Parent;
+                        tree.Parent.Children = tree.Children;
+                        tree = null;
+                    }
+                }
+            }
+            foreach (ContourNode child in tree.Children)
+            {
+                StripDoubles(child);
+            }
+        }
+        /* TODO: make a function that prunes the tree of ContourNodes. 
+         * It strips away contours with (about) the same area as their parents, and makes its own parent the parent of its children (A-B-C to A-C)
+         * 
+         * Then, if a node has a color and no children, its Solid
+         * if it has 1 child with Card-color, its Open. 
+         * If there is a child with the same color, it Dashed.
+         */
     }
 }
