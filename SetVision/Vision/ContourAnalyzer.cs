@@ -347,7 +347,8 @@ namespace SetVision.Vision
                 && node.Contour.Area > 100
                 && ((node.Label == "Squiggle")
                     || (node.Label == "Diamond")
-                    || (node.Label == "Oval")))
+                    || (node.Label == "Oval")
+                    || (node.Label == "Card")))
             {
                 CardColor color = RecognizeColor(image, node);
                 node.Color = color;
@@ -367,55 +368,19 @@ namespace SetVision.Vision
             Contour<Point> contour = node.Contour;
 
             #region extract color
-            Image<Bgr, Byte> image = _image;
-            Image<Gray, Byte> mask = image.Convert<Gray, Byte>();
-            mask.SetZero();
-            mask.Draw(contour, new Gray(255), new Gray(0), 2, -1);
-
-            mask.Erode(1);
-
-            Image<Bgr, Byte> rgbMask = new Image<Bgr, byte>(new Image<Gray, byte>[] { mask, mask, mask });
-
-            Image<Bgr, Byte> focusBgr = image.And(new Bgr(255, 255, 255), mask);
-            Image<Hsv, Byte> focusHsv = image.And(new Bgr(255, 255, 255), mask).Convert<Hsv, Byte>();
+            Image<Gray, Byte> mask;
+            Image<Bgr, Byte> focusBgr = ExtractContourImage(_image, contour, out mask);
             Bgr avgBgr = new Bgr();
             MCvScalar scr1 = new MCvScalar();
             focusBgr.AvgSdv(out avgBgr, out scr1, mask);
 
+            Image<Hsv, Byte> focusHsv = focusBgr.Convert<Hsv, Byte>();
             Hsv avgHsv = new Hsv();
             MCvScalar scr2 = new MCvScalar();
             focusHsv.AvgSdv(out avgHsv, out scr2, mask);
-
             #endregion
 
-            CardColor color = CardColor.White;
-            #region classify
-            if(avgHsv.Satuation < 30)
-            {
-                color = CardColor.White;
-            }
-            else if (avgBgr.Red > avgBgr.Blue && avgBgr.Red > avgBgr.Green)
-            {
-                color = CardColor.Red;
-            }
-            else if (avgBgr.Green > avgBgr.Blue && avgBgr.Green > avgBgr.Red)
-            {
-                color = CardColor.Green;
-            }
-            else if (avgBgr.Green < avgBgr.Blue && avgBgr.Green < avgBgr.Red)
-            {
-                color = CardColor.Purple;
-            }
-            //else if (avgHsv.Satuation < 50 && avgHsv.Satuation > 30)
-            //{
-            //    fill = Fill.Dashed;
-            //}
-            else
-            {
-                color = CardColor.White;
-                //throw new Exception("Could not determine colors of the contour");
-            }
-            #endregion
+            CardColor color = ClassifyColor(avgBgr, avgHsv);
 
             #region debug
 #if DEBUG
@@ -432,6 +397,8 @@ namespace SetVision.Vision
                 + ((int)avgHsv.Value).ToString();
 
             debug = debug.ConcateHorizontal(focusBgr);
+
+            Image<Bgr, Byte> rgbMask = new Image<Bgr, byte>(new Image<Gray, byte>[] { mask, mask, mask });
             //debug = debug.ConcateHorizontal(rgbMask);
             //ImageViewer.Show(debug, "rgb(" + bgrstr + ") hsv(" + hsvstr + ")"+"Classified as "+color.ToString());
             #endif
@@ -441,6 +408,39 @@ namespace SetVision.Vision
             node.image = focusBgr;
 
             return color;
+        }
+
+        private static CardColor ClassifyColor(Bgr avgBgr, Hsv avgHsv)
+        {
+            if (avgHsv.Satuation < 30)
+            {
+                return CardColor.White;
+            }
+            else if (avgBgr.Red > avgBgr.Blue && avgBgr.Red > avgBgr.Green)
+            {
+                return CardColor.Red;
+            }
+            else if (avgBgr.Green > avgBgr.Blue && avgBgr.Green > avgBgr.Red)
+            {
+                return CardColor.Green;
+            }
+            else if (avgBgr.Green < avgBgr.Blue && avgBgr.Green < avgBgr.Red)
+            {
+                return CardColor.Purple;
+            }
+            else
+            {
+                return CardColor.White;
+            }
+        }
+
+        private static Image<Bgr, Byte> ExtractContourImage(Image<Bgr, Byte> image, Contour<Point> contour, out Image<Gray, Byte> mask)
+        {
+            mask = image.Convert<Gray, Byte>();
+            mask.SetZero();
+            mask.Draw(contour, new Gray(255), new Gray(0), 2, -1);
+
+            return image.And(new Bgr(255, 255, 255), mask);
         }
         #endregion
 
