@@ -79,7 +79,7 @@ namespace SetVision.Vision
 
         #region ICardDetector Members
 
-        public IDictionary<SetVision.Gamelogic.Card, Point> LocateCards(Image<Bgr, byte> table)
+        public Dictionary<SetVision.Gamelogic.Card, Point> LocateCards(Image<Bgr, byte> table)
         {
             throw new NotImplementedException();
         }

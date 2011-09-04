@@ -24,7 +24,7 @@ namespace SetVision.Vision
         /// </summary>
         /// <param name="table">An image displaying the table with the Set cards</param>
         /// <returns>A dict locating which cards are present where in the image</returns>
-        public IDictionary<Card, Point> LocateCards(Image<Bgr, Byte> table)
+        public Dictionary<Card, Point> LocateCards(Image<Bgr, Byte> table)
         {
             #region process image
             //Convert the image to grayscale and filter out the noise
@@ -65,7 +65,7 @@ namespace SetVision.Vision
             #endregion
 
             Contour<Point> contours = cannyEdges.FindContours(
-                CHAIN_APPROX_METHOD.CV_CHAIN_APPROX_SIMPLE,
+                CHAIN_APPROX_METHOD.CV_CHAIN_APPROX_SIMPLE, //was CV_CHAIN_APPROX_SIMPLE
                 RETR_TYPE.CV_RETR_TREE);
 
             ContourNode tree = new ContourNode(contours);
@@ -76,12 +76,25 @@ namespace SetVision.Vision
             ColorizeTree(tree, table);
 
             #region draw
-
-            TreeViz.VizualizeTree(tree);
+#if DEBUG
+            //TreeViz.VizualizeTree(tree);
             DrawContours(tree, table);
-            ImageViewer.Show(table);
+            //ImageViewer.Show(table);
+#endif
             #endregion
-            return new Dictionary<Card, Point>();
+
+            Dictionary<Card, Point> cardlocs = new Dictionary<Card, Point>();
+            foreach (KeyValuePair<Card, ContourNode> pair in GiveCards(tree))
+            {
+                ContourNode node = pair.Value;
+                Card card = pair.Key;
+
+                PointF fcenter = node.Contour.GetMinAreaRect().center;
+                Point center = new Point((int)fcenter.X, (int)fcenter.Y);
+
+                cardlocs.Add(card, center);
+            }
+            return cardlocs;
         }
 
         #region labeling
@@ -98,23 +111,23 @@ namespace SetVision.Vision
         {
             if (IsCard(node))
             {
-                node.Label = "Card";
+                node.Shape = Shape.Card;
             }
             else if (IsSquiggle(node))
             {
-                node.Label = "Squiggle";
+                node.Shape = Shape.Squiggle;
             }
             else if (IsOval(node))
             {
-                node.Label = "Oval";
+                node.Shape = Shape.Oval;
             }
             else if (IsDiamond(node))
             {
-                node.Label = "Diamond";
+                node.Shape = Shape.Diamond;
             }
             else
             {
-                node.Label = "_";
+                node.Shape = Shape.Other;
             }
         }
         #endregion
@@ -123,8 +136,8 @@ namespace SetVision.Vision
         private bool IsDiamond(ContourNode node)
         {
             bool inCard = node.Parent != null &&
-                   (node.Parent.Label == "Card" ||
-                       node.Parent.Label == "Diamond");
+                   (node.Parent.Shape == Shape.Card ||
+                       node.Parent.Shape == Shape.Diamond);
             if (inCard)
             {
                 using (MemStorage storage = new MemStorage())
@@ -151,8 +164,8 @@ namespace SetVision.Vision
         private bool IsOval(ContourNode node)
         {
             bool inCard = node.Parent != null &&
-                   (node.Parent.Label == "Card" ||
-                       node.Parent.Label == "Oval");
+                   (node.Parent.Shape == Shape.Card ||
+                       node.Parent.Shape == Shape.Oval);
             if (inCard)
             {
                 #region sharp
@@ -200,8 +213,8 @@ namespace SetVision.Vision
         private bool IsSquiggle(ContourNode node)
         {
             bool inCard = node.Parent != null && 
-                (node.Parent.Label == "Card" ||
-                    node.Parent.Label == "Squiggle");
+                (node.Parent.Shape == Shape.Card ||
+                    node.Parent.Shape == Shape.Squiggle);
             bool convex = true;
 
             if (inCard)
@@ -282,10 +295,10 @@ namespace SetVision.Vision
             {
                 canvas.DrawPolyline(child.Contour.ToArray(), true, _color, 1);
                 
-                if (!String.IsNullOrEmpty(node.Label))
+                if (node.Shape != null)
 	            {
                     MCvFont font = new MCvFont(FONT.CV_FONT_HERSHEY_PLAIN, 1,1);
-                    canvas.Draw(child.Label,
+                    canvas.Draw(child.Shape + child.Color.ToString(),
                         ref font,
                         child.Contour[0],
                         new Bgr(System.Drawing.Color.Red)
@@ -307,10 +320,10 @@ namespace SetVision.Vision
             {
                 canvas.DrawPolyline(child.Contour.ToArray(), true, _color, 1);
 
-                if (!String.IsNullOrEmpty(node.Label))
+                if (node.Shape != null)
                 {
                     MCvFont font = new MCvFont(FONT.CV_FONT_HERSHEY_PLAIN, 1, 1);
-                    canvas.Draw(child.Label,
+                    canvas.Draw(child.Shape+child.Color.ToString(),
                         ref font,
                         child.Contour[0],
                         new Bgr(System.Drawing.Color.Red)
@@ -343,12 +356,12 @@ namespace SetVision.Vision
         }
         private void ColorizeNode(ContourNode node, Image<Bgr, Byte> image)
         {
-            if (!String.IsNullOrEmpty(node.Label)
+            if (node.Shape != null
                 && node.Contour.Area > 100
-                && ((node.Label == "Squiggle")
-                    || (node.Label == "Diamond")
-                    || (node.Label == "Oval")
-                    || (node.Label == "Card")))
+                && ((node.Shape == Shape.Squiggle)
+                    || (node.Shape == Shape.Diamond)
+                    || (node.Shape == Shape.Oval)
+                    || (node.Shape == Shape.Card)))
             {
                 CardColor color = RecognizeColor(image, node);
                 node.Color = color;
@@ -381,9 +394,10 @@ namespace SetVision.Vision
             #endregion
 
             CardColor color = ClassifyColor(avgBgr, avgHsv);
-
+            node.averageBgr = avgBgr;
+            node.averageHsv = avgHsv;
             #region debug
-#if DEBUG
+            #if DEBUG
             Image<Bgr, Byte> debug = new Image<Bgr, Byte>(250, 200);
             debug.SetValue(avgBgr);
             string bgrstr =
@@ -410,11 +424,15 @@ namespace SetVision.Vision
             return color;
         }
 
-        private static CardColor ClassifyColor(Bgr avgBgr, Hsv avgHsv)
+        private CardColor ClassifyColor(Bgr avgBgr, Hsv avgHsv)
         {
             if (avgHsv.Satuation < 30)
             {
                 return CardColor.White;
+            }
+            else if (avgHsv.Satuation < 45)
+            {
+                return CardColor.Other;
             }
             else if (avgBgr.Red > avgBgr.Blue && avgBgr.Red > avgBgr.Green)
             {
@@ -434,14 +452,57 @@ namespace SetVision.Vision
             }
         }
 
-        private static Image<Bgr, Byte> ExtractContourImage(Image<Bgr, Byte> image, Contour<Point> contour, out Image<Gray, Byte> mask)
+        private Image<Bgr, Byte> ExtractContourImage(Image<Bgr, Byte> image, Contour<Point> contour, out Image<Gray, Byte> mask)
         {
             mask = image.Convert<Gray, Byte>();
             mask.SetZero();
+            //Contour<Point> shifted = ShiftContour(contour, -3,-3);
             mask.Draw(contour, new Gray(255), new Gray(0), 2, -1);
 
             return image.And(new Bgr(255, 255, 255), mask);
         }
+
+        private void ShiftContour(ref Contour<Point> orig, int x, int y)
+        {
+            //for (int i = 0; i <= orig.Count<Point>()-1; i++)
+            //{
+            //    Point p = orig[i];
+            //    p.X += x;
+            //    p.Y += y;
+            //    orig[i] = p;
+            //}
+
+            //using (MemStorage storage = new MemStorage())
+            //{
+            //    Contour<Point> result = new Contour<Point>(storage);
+            //    foreach (Point p in orig)
+            //    {
+            //        result.Push(new Point(p.X + x, p.Y + y));
+            //    }
+
+            //    result.HNext = orig.HNext;
+            //    result.HPrev = orig.HPrev;
+            //    result.VNext = orig.VNext;
+            //    result.VPrev = orig.VPrev;
+
+            //    return result;
+            //}
+
+            //using (MemStorage storage = new MemStorage())
+            //{
+            //    Contour<Point> result = new Contour<Point>(storage);
+            //    result = orig;
+            //    //result.HNext = orig.HNext;
+            //    Point p = result.PopFront();
+            //    while(p != null)
+            //    {
+            //        result.Push(new Point(p.X + x, p.Y + y));
+            //        p = result.Pop();
+            //    }
+            //    return result;
+            //}
+        }
+
         #endregion
 
         /// <summary>
@@ -453,7 +514,7 @@ namespace SetVision.Vision
         {
             if (tree.Parent != null)
             {
-                if ((tree.Parent.Label == tree.Label)
+                if ((tree.Parent.Shape == tree.Shape)
                     &&
                     ((tree.Parent.Contour.Area <= (tree.Contour.Area+tree.Contour.Perimeter)) &&
                     (tree.Parent.Contour.Area >= tree.Contour.Area)))
@@ -472,12 +533,105 @@ namespace SetVision.Vision
                 StripDoubles(child);
             }
         }
-        /* TODO: make a function that prunes the tree of ContourNodes. 
-         * It strips away contours with (about) the same area as their parents, and makes its own parent the parent of its children (A-B-C to A-C)
-         * 
-         * Then, if a node has a color and no children, its Solid
-         * if it has 1 child with Card-color, its Open. 
+
+        /* TODO: 
+         * If a node has a color and no children, its Solid
+         * if it has 1 child with White or Other-color, its Open. 
          * If there is a child with the same color, it Dashed.
          */
+
+        public IEnumerable<KeyValuePair<Card, ContourNode>> GiveCards(ContourNode tree)
+        {
+            if (tree.Shape == Shape.Card)
+            {
+                yield return AnalyzeNode(tree);
+            }
+            else
+            {
+                foreach (ContourNode child in tree.Children)
+                {
+                    foreach(KeyValuePair<Card, ContourNode> pair in GiveCards(child))
+                    {
+                        yield return pair;
+                    }
+                }
+            }
+
+
+            //Stack<ContourNode> stack = new Stack<ContourNode>();
+            //stack.Push(tree);
+
+            //ContourNode current = null;
+            //while (true)
+            //{
+            //    while (stack.Count > 0)
+            //    {
+            //        stack.Push(current);
+            //        current = current.Children[0];
+            //    }
+            //}
+        }
+        public KeyValuePair<Card, ContourNode> AnalyzeNode(ContourNode cardNode)
+        {
+            if (cardNode.Shape != Shape.Card)
+            {
+                throw new ArgumentException("The node is not labeled as a Card", "node.Shape");
+            }
+            else
+            {
+                int count = cardNode.Children.Count;
+                CardColor color = cardNode.Children[0].Color;
+
+                Fill fill = DetermineFill(cardNode);
+
+                Shape shape = cardNode.Children[0].Shape;
+                
+                Card card = new Card(color, shape, fill, count);
+                return new KeyValuePair<Card, ContourNode>(card, cardNode);
+            }
+        }
+
+        private Fill DetermineFill(ContourNode cardNode)
+        {
+            Fill fill = Fill.Other;
+            ContourNode outer = cardNode.Children[0];
+            ContourNode inner = outer.Children[0];
+
+            double card2blobColordist = ColorDistance(cardNode.averageBgr, inner.averageBgr);
+
+            //Als distance < 60: dan waarschijnlijk dashed, maar wel in de aangegeven kleur. 
+            //Dit moet als eerste gechecked worden
+            
+            if ((inner.Color == CardColor.Other ||
+                    inner.Color == CardColor.Green ||
+                    inner.Color == CardColor.Red ||
+                    inner.Color == CardColor.Purple)
+                &&
+                card2blobColordist < 60)
+            {
+                fill = Fill.Dashed;
+            }
+            else if (inner.Color == CardColor.Green  || 
+                inner.Color == CardColor.Red    || 
+                inner.Color == CardColor.Purple)
+            {
+                fill = Fill.Solid;
+            }
+            else if (inner.Color == CardColor.White)
+            {
+                fill = Fill.Open;
+            }
+            return fill;
+        }
+
+        private double ColorDistance(Bgr a, Bgr b)
+        {
+            //do an euclidian distance on R, G and B
+            double blue = Math.Abs(a.Blue-b.Blue) * Math.Abs(a.Blue-b.Blue);
+            double green = Math.Abs(a.Green-b.Green) * Math.Abs(a.Green-b.Green);
+            double red = Math.Abs(a.Red-b.Red) * Math.Abs(a.Red-b.Red);
+            double result = Math.Sqrt(blue + green + red);
+            return result;
+        }
     }
 }

@@ -10,21 +10,25 @@ namespace SetVision.Gamelogic
         Purple,
         Green,
         Red,
-        White
+        White,
+        Other
     }
 
     public enum Shape
     {
         Oval,
         Diamond,
-        Squiggle
+        Squiggle,
+        Card,
+        Other
     }
 
     public enum Fill
     {
         Open,
         Dashed,
-        Solid
+        Solid,
+        Other
     }
 
     public class Card
@@ -36,6 +40,25 @@ namespace SetVision.Gamelogic
 
         public Card(CardColor color, Shape shape, Fill fill, int count)
         {
+            #region validation
+            if (color == CardColor.Other)
+            {
+                throw new ArgumentException("Invalid color: "+color.ToString(), "color");
+            } 
+            if (shape == Shape.Other)
+            {
+                throw new ArgumentException("Invalid shape: "+shape.ToString(), "shape");
+            }
+            if (fill == Fill.Other)
+            {
+                throw new ArgumentException("Invalid fill: " + fill.ToString(), "fill");
+            }
+            if (count > 3 || count < 1)
+            {
+                throw new ArgumentException("Invalid count: " + count.ToString(), "count");
+            }
+            #endregion validation
+
             this.Color = color;
             this.Shape = shape;
             this.Fill = fill;

@@ -5,6 +5,7 @@ using System.Text;
 using Emgu.CV;
 using System.Drawing;
 using SetVision.Gamelogic;
+using Emgu.CV.Structure;
 
 namespace SetVision.Vision
 {
@@ -13,10 +14,12 @@ namespace SetVision.Vision
         public List<ContourNode> Children;
         public Contour<Point> Contour;
         public ContourNode Parent;
-        public string Label;
+        public Shape Shape;
         public CardColor Color;
         public Fill Fill;
         public IImage image;
+        public Bgr averageBgr;
+        public Hsv averageHsv;
 
         public ContourNode(Contour<Point> node)
         {

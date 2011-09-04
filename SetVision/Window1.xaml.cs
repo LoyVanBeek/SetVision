@@ -8,6 +8,8 @@ using Emgu.CV.Features2D;
 using Emgu.CV.Structure;
 using Emgu.CV.UI;
 using SetVision.Vision;
+using SetVision.Gamelogic;
+using System.Collections.Generic;
 
 namespace SetVision
 {
@@ -28,7 +30,26 @@ namespace SetVision
             ContourAnalyzer ca = new ContourAnalyzer();
             Image<Bgr, Byte> table = new Image<Bgr, byte>(@"images/scene3.jpg");
             table = table.PyrDown().PyrDown();
-            ca.LocateCards(table);
+            Dictionary<Card, System.Drawing.Point> cards = ca.LocateCards(table);
+
+            Logic logic = new Logic();
+            HashSet<List<Card>> sets = logic.FindSets(new List<Card>(cards.Keys));
+            
+            Random rnd = new Random();
+            foreach (List<Card> set in sets)
+            {
+                Bgr setcolor = new Bgr(rnd.Next(255), rnd.Next(255), rnd.Next(255));
+
+                foreach (Card card in cards.Keys)
+                {
+                    System.Drawing.Point p = cards[card];
+                    CircleF circle = new CircleF(new PointF(p.X, p.Y), 50);
+                    table.Draw(circle, setcolor, 2);
+                }
+            }
+            
+            
+            ImageViewer.Show(table);
         }
 
         static void Run()
