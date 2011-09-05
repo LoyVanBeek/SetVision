@@ -14,13 +14,18 @@ namespace SetVision.Gamelogic
         public List<Card> GenerateCards()
         {
             List<Card> cards = new List<Card>();
-            foreach (CardColor color in Enum.GetValues(typeof(CardColor)))
+            CardColor[] validColors = new CardColor[] { CardColor.Green, CardColor.Purple, CardColor.Red };
+            Fill[] validFills = new Fill[] { Fill.Dashed, Fill.Open, Fill.Solid };
+            Shape[] validShapes = new Shape[] { Shape.Diamond, Shape.Oval, Shape.Squiggle };
+            int[] validCounts = new int[] { 1, 2, 3 };
+           
+            foreach (CardColor color in validColors)
             {
-                foreach (Fill fill in Enum.GetValues(typeof(Fill)))
+                foreach (Fill fill in validFills)
                 {
-                    foreach (Shape shape in Enum.GetValues(typeof(Shape)))
+                    foreach (Shape shape in validShapes)
                     {
-                        for (int i = 1; i <= 3; i++)
+                        foreach(int i in validCounts)
                         {
                             cards.Add(new Card(color, shape, fill, i));
                         }

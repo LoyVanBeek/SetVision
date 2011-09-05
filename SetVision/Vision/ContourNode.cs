@@ -17,7 +17,7 @@ namespace SetVision.Vision
         public Shape Shape;
         public CardColor Color;
         public Fill Fill;
-        public IImage image;
+        public Image<Bgr, Byte> image;
         public Bgr averageBgr;
         public Hsv averageHsv;
 
@@ -61,6 +61,27 @@ namespace SetVision.Vision
                     }
                 }
             }
+        }
+
+        public ContourNode FindParent(Shape? shape, Fill? fill, CardColor? color)
+        {
+            ContourNode parent = this.Parent;
+            while (parent != null)
+            {
+                bool shapeOK = (parent.Shape == shape)  || (shape==null);
+                bool fillOK = (parent.Fill == fill)     || (fill == null);
+                bool colorOK = (parent.Color == color)  || (color == null);
+
+                if (shapeOK && fillOK && colorOK)
+                {
+                    return parent;
+                }
+                else
+                {
+                    parent = parent.Parent;
+                }
+            }
+            return null;
         }
     }
 }

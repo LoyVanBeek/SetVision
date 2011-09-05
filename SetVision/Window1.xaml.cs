@@ -29,7 +29,7 @@ namespace SetVision
         {
             ContourAnalyzer ca = new ContourAnalyzer();
             Image<Bgr, Byte> table = new Image<Bgr, byte>(@"images/scene3.jpg");
-            table = table.PyrDown().PyrDown();
+            table = table.PyrDown().PyrDown();//.PyrDown().PyrUp();
             Dictionary<Card, System.Drawing.Point> cards = ca.LocateCards(table);
 
             Logic logic = new Logic();

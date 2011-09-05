@@ -36,32 +36,8 @@ namespace SetVision.Vision
 
             Image<Gray, Byte> cannyEdges = gray.Canny(cannyThreshold, cannyThresholdLinking);
             
-            StructuringElementEx el = new StructuringElementEx(3,3, 2,2,CV_ELEMENT_SHAPE.CV_SHAPE_RECT);
+            StructuringElementEx el = new StructuringElementEx(3,3, 1,1,CV_ELEMENT_SHAPE.CV_SHAPE_RECT);
             cannyEdges = cannyEdges.MorphologyEx(el, CV_MORPH_OP.CV_MOP_CLOSE, 1);
-            #endregion
-
-            #region find contours list
-            //List<List<LineSegment2D>> contourPolys = new List<List<LineSegment2D>>(); //but this is very good
-
-            //using (MemStorage storage = new MemStorage()) //allocate storage for contour approximation
-            //{
-            //    for (Contour<Point> contours = cannyEdges.FindContours(); contours != null; contours = contours.HNext)
-            //    {
-            //        Contour<Point> currentContour = contours.ApproxPoly(contours.Perimeter * 0.000, storage); //Maybe tune the accuracy?
-
-            //        #region filter contours
-            //        if (contours.Area > 250) //only consider contours with area greater than 250
-            //        {
-            //            #region stuff by loy
-            //            Point[] points = currentContour.ToArray();
-            //            List<LineSegment2D> contourEdges = new List<LineSegment2D>(PointCollection.PolyLine(points, true));
-            //            contourPolys.Add(contourEdges);
-
-            //            #endregion stuff by loy
-            //        }
-            //        #endregion filter contours
-            //    }
-            //}
             #endregion
 
             Contour<Point> contours = cannyEdges.FindContours(
@@ -75,13 +51,7 @@ namespace SetVision.Vision
 
             ColorizeTree(tree, table);
 
-            #region draw
-#if DEBUG
-            //TreeViz.VizualizeTree(tree);
-            DrawContours(tree, table);
-            //ImageViewer.Show(table);
-#endif
-            #endregion
+            //Image<Gray, Byte> grabcut = table.GrabCut(new Rectangle(586/4, 559/4, 228/4, 92/4), 1);
 
             Dictionary<Card, Point> cardlocs = new Dictionary<Card, Point>();
             foreach (KeyValuePair<Card, ContourNode> pair in GiveCards(tree))
@@ -94,6 +64,15 @@ namespace SetVision.Vision
 
                 cardlocs.Add(card, center);
             }
+
+            #region draw
+#if DEBUG
+            TreeViz.VizualizeTree(tree);
+            DrawContours(tree, table);
+            //ImageViewer.Show(table);
+#endif
+            #endregion
+
             return cardlocs;
         }
 
@@ -383,6 +362,9 @@ namespace SetVision.Vision
             #region extract color
             Image<Gray, Byte> mask;
             Image<Bgr, Byte> focusBgr = ExtractContourImage(_image, contour, out mask);
+
+            focusBgr = RemoveCardColor(node, focusBgr);
+            
             Bgr avgBgr = new Bgr();
             MCvScalar scr1 = new MCvScalar();
             focusBgr.AvgSdv(out avgBgr, out scr1, mask);
@@ -393,7 +375,13 @@ namespace SetVision.Vision
             focusHsv.AvgSdv(out avgHsv, out scr2, mask);
             #endregion
 
+            
             CardColor color = ClassifyColor(avgBgr, avgHsv);
+            //ContourNode parent = node.FindParent(Shape.Card, null, null);
+            //if (parent != null)
+            //{
+            //    double colDist = ColorDistance(avgBgr, parent.averageBgr);
+            //}
             node.averageBgr = avgBgr;
             node.averageHsv = avgHsv;
             #region debug
@@ -503,6 +491,29 @@ namespace SetVision.Vision
             //}
         }
 
+        private Image<Bgr, Byte> RemoveCardColor(ContourNode node, Image<Bgr, Byte> removeFrom)
+        {
+            ContourNode parentCard = node.FindParent(Shape.Card, null, null);
+            if (parentCard != null)
+            {
+                //Image<Bgr, Byte> eroded = removeFrom.Erode(1);
+                //Image<Bgr, Byte> thresholded = eroded.ThresholdBinary(parentCard.averageBgr, new Bgr(255,255,255));
+                //return thresholded;
+                Image<Gray, Byte> gray = removeFrom.Convert<Gray, Byte>();
+                Image<Bgr, Byte> multiplier = new Image<Bgr, byte>(new Image<Gray, byte>[] { gray, gray, gray });
+                Image<Bgr, Byte> mul = removeFrom.Mul(multiplier, 0.015);
+                Image<Bgr, Byte> threshed = mul.ThresholdToZeroInv(new Bgr(254, 254, 254));
+                Image<Gray, Byte> mask = threshed.Convert<Gray, Byte>();
+                Image<Bgr, Byte> result = mul.And(new Bgr(255, 255, 255), mask);
+                result = result.Mul(multiplier, 0.005);
+                return result;
+            }
+            else
+            {
+                return removeFrom;
+            }
+        }
+
         #endregion
 
         /// <summary>
@@ -587,6 +598,7 @@ namespace SetVision.Vision
                 Shape shape = cardNode.Children[0].Shape;
                 
                 Card card = new Card(color, shape, fill, count);
+                cardNode.Fill = fill;
                 return new KeyValuePair<Card, ContourNode>(card, cardNode);
             }
         }
@@ -621,6 +633,10 @@ namespace SetVision.Vision
             {
                 fill = Fill.Open;
             }
+
+            inner.Fill = fill;
+            outer.Fill = fill;
+
             return fill;
         }
 
