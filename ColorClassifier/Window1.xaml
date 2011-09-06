@@ -6,16 +6,16 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="50"/>
             <RowDefinition/>
+            <RowDefinition Height="50"/>
         </Grid.RowDefinitions>
         
-        <Button Grid.Row="0" Content="Generate colors" Click="Button_Click"/>
-        <ListView x:Name="ColorDisplay" Grid.Row="1">
+        <Button Grid.Row="0" Content="Train" Click="Button_Click"/>
+        <!--<ListView x:Name="ColorDisplay" Grid.Row="1">
             <ListView.ItemTemplate>
                 <DataTemplate>
                     <StackPanel Orientation="Horizontal" 
                                 Background="{Binding}"
                                 HorizontalAlignment="Stretch">
-                        <!--<Canvas Background=""-->
                         <ComboBox>
                             <ComboBoxItem>Red</ComboBoxItem>
                             <ComboBoxItem>Purple</ComboBoxItem>
@@ -27,5 +27,6 @@
                 </DataTemplate>
             </ListView.ItemTemplate>
         </ListView>
+        <Button Grid.Row="2">Train Knn</Button>-->
     </Grid>
 </Window>

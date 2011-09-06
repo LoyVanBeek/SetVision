@@ -28,7 +28,7 @@ namespace SetVision
         void Window1_Loaded(object sender, RoutedEventArgs e)
         {
             ContourAnalyzer ca = new ContourAnalyzer();
-            Image<Bgr, Byte> table = new Image<Bgr, byte>(@"images/scene3.jpg");
+            Image<Bgr, Byte> table = new Image<Bgr, byte>(@"images/scene4.jpg");
             table = table.PyrDown().PyrDown();//.PyrDown().PyrUp();
             Dictionary<Card, System.Drawing.Point> cards = ca.LocateCards(table);
 

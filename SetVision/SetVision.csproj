@@ -129,6 +129,7 @@
     <Compile Include="TreeViz.xaml.cs">
       <DependentUpon>TreeViz.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Vision\BgrHsvClassifier.cs" />
     <Compile Include="Vision\CardContour.cs" />
     <Compile Include="Vision\ContourAnalyzer.cs" />
     <Compile Include="Vision\ContourNode.cs" />
