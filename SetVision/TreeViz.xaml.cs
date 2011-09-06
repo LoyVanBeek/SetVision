@@ -73,9 +73,9 @@ namespace SetVision
             lbl.Content = tree.Shape + ":" + tree.Color.ToString() + ":" + tree.Fill.ToString();
 
             Image img = new Image();
-            if (tree.image != null)
+            if (tree.Image != null)
             {
-                BitmapSource src = TreeViz.ToBitmapSource(tree.image);
+                BitmapSource src = TreeViz.ToBitmapSource(tree.Image);
                 img.Source = src; 
             }
 

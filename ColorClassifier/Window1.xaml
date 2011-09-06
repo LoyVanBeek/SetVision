@@ -1,0 +1,31 @@
+﻿<Window x:Class="ColorClassifier.Window1"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Window1" Height="600" Width="600">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="50"/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+        
+        <Button Grid.Row="0" Content="Generate colors" Click="Button_Click"/>
+        <ListView x:Name="ColorDisplay" Grid.Row="1">
+            <ListView.ItemTemplate>
+                <DataTemplate>
+                    <StackPanel Orientation="Horizontal" 
+                                Background="{Binding}"
+                                HorizontalAlignment="Stretch">
+                        <!--<Canvas Background=""-->
+                        <ComboBox>
+                            <ComboBoxItem>Red</ComboBoxItem>
+                            <ComboBoxItem>Purple</ComboBoxItem>
+                            <ComboBoxItem>Green</ComboBoxItem>
+                            <ComboBoxItem>White</ComboBoxItem>
+                            <ComboBoxItem>Other</ComboBoxItem>
+                        </ComboBox>
+                    </StackPanel>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+    </Grid>
+</Window>

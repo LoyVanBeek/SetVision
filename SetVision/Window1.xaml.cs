@@ -32,21 +32,21 @@ namespace SetVision
             table = table.PyrDown().PyrDown();//.PyrDown().PyrUp();
             Dictionary<Card, System.Drawing.Point> cards = ca.LocateCards(table);
 
-            Logic logic = new Logic();
-            HashSet<List<Card>> sets = logic.FindSets(new List<Card>(cards.Keys));
+            //Logic logic = new Logic();
+            //HashSet<List<Card>> sets = logic.FindSets(new List<Card>(cards.Keys));
             
-            Random rnd = new Random();
-            foreach (List<Card> set in sets)
-            {
-                Bgr setcolor = new Bgr(rnd.Next(255), rnd.Next(255), rnd.Next(255));
+            //Random rnd = new Random();
+            //foreach (List<Card> set in sets)
+            //{
+            //    Bgr setcolor = new Bgr(rnd.Next(255), rnd.Next(255), rnd.Next(255));
 
-                foreach (Card card in cards.Keys)
-                {
-                    System.Drawing.Point p = cards[card];
-                    CircleF circle = new CircleF(new PointF(p.X, p.Y), 50);
-                    table.Draw(circle, setcolor, 2);
-                }
-            }
+            //    foreach (Card card in cards.Keys)
+            //    {
+            //        System.Drawing.Point p = cards[card];
+            //        CircleF circle = new CircleF(new PointF(p.X, p.Y), 50);
+            //        table.Draw(circle, setcolor, 2);
+            //    }
+            //}
             
             
             ImageViewer.Show(table);

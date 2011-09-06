@@ -47,28 +47,27 @@ namespace SetVision.Vision
             ContourNode tree = new ContourNode(contours);
             LabelTree(tree);
 
-            StripDoubles(tree);
+            //StripDoubles(tree);
 
             ColorizeTree(tree, table);
 
-            //Image<Gray, Byte> grabcut = table.GrabCut(new Rectangle(586/4, 559/4, 228/4, 92/4), 1);
-
             Dictionary<Card, Point> cardlocs = new Dictionary<Card, Point>();
-            foreach (KeyValuePair<Card, ContourNode> pair in GiveCards(tree))
-            {
-                ContourNode node = pair.Value;
-                Card card = pair.Key;
+            //NOT YET WORKING, DEPENDS ON PREVIOUS CODE
+            //foreach (KeyValuePair<Card, ContourNode> pair in GiveCards(tree))
+            //{
+            //    ContourNode node = pair.Value;
+            //    Card card = pair.Key;
 
-                PointF fcenter = node.Contour.GetMinAreaRect().center;
-                Point center = new Point((int)fcenter.X, (int)fcenter.Y);
+            //    PointF fcenter = node.Contour.GetMinAreaRect().center;
+            //    Point center = new Point((int)fcenter.X, (int)fcenter.Y);
 
-                cardlocs.Add(card, center);
-            }
+            //    cardlocs.Add(card, center);
+            //}
 
             #region draw
 #if DEBUG
-            TreeViz.VizualizeTree(tree);
             DrawContours(tree, table);
+            TreeViz.VizualizeTree(tree);
             //ImageViewer.Show(table);
 #endif
             #endregion
@@ -77,7 +76,7 @@ namespace SetVision.Vision
         }
 
         #region labeling
-        private void LabelTree(ContourNode tree)
+        private static void LabelTree(ContourNode tree)
         {
             LabelNode(tree);
             foreach (ContourNode child in tree.Children)
@@ -86,7 +85,7 @@ namespace SetVision.Vision
                 LabelTree(child); //TODO: should be enabled
             }
         }
-        private void LabelNode(ContourNode node)
+        private static void LabelNode(ContourNode node)
         {
             if (IsCard(node))
             {
@@ -112,7 +111,7 @@ namespace SetVision.Vision
         #endregion
 
         #region actual labels
-        private bool IsDiamond(ContourNode node)
+        public static bool IsDiamond(ContourNode node)
         {
             bool inCard = node.Parent != null &&
                    (node.Parent.Shape == Shape.Card ||
@@ -140,7 +139,7 @@ namespace SetVision.Vision
             }
         }
 
-        private bool IsOval(ContourNode node)
+        public static bool IsOval(ContourNode node)
         {
             bool inCard = node.Parent != null &&
                    (node.Parent.Shape == Shape.Card ||
@@ -189,7 +188,7 @@ namespace SetVision.Vision
             }
         }
 
-        private bool IsSquiggle(ContourNode node)
+        public static bool IsSquiggle(ContourNode node)
         {
             bool inCard = node.Parent != null && 
                 (node.Parent.Shape == Shape.Card ||
@@ -239,7 +238,7 @@ namespace SetVision.Vision
             return !convex && inCard;
         }
 
-        private bool IsCard(ContourNode node)
+        public static bool IsCard(ContourNode node)
         {
             bool area = node.Contour.Area > 5000;
             MCvBox2D bounds = node.Contour.GetMinAreaRect();
@@ -266,7 +265,7 @@ namespace SetVision.Vision
         #endregion
 
         #region drawing
-        private void DrawContours(ContourNode node, Image<Bgr, Byte> canvas, System.Drawing.Color color)
+        public static void DrawContours(ContourNode node, Image<Bgr, Byte> canvas, System.Drawing.Color color)
         {
             Bgr _color = new Bgr(System.Drawing.Color.Red);
 
@@ -288,7 +287,7 @@ namespace SetVision.Vision
             }
         }
 
-        private void DrawContours(ContourNode node, Image<Bgr, Byte> canvas)
+        public static void DrawContours(ContourNode node, Image<Bgr, Byte> canvas)
         {
             #region color
             Random rnd = new Random(node.Contour.Ptr.ToInt32());
@@ -313,7 +312,7 @@ namespace SetVision.Vision
             }
         }
 
-        private void ShowContour(Contour<Point> contour, Image<Bgr, Byte> original_image, string message)
+        public static void ShowContour(Contour<Point> contour, Image<Bgr, Byte> original_image, string message)
         {
             Image<Bgr, Byte> canvas = original_image.Clone();
             canvas.SetZero();
@@ -324,7 +323,7 @@ namespace SetVision.Vision
         #endregion
 
         #region color
-        private void ColorizeTree(ContourNode tree, Image<Bgr, Byte> image)
+        private static void ColorizeTree(ContourNode tree, Image<Bgr, Byte> image)
         {
             ColorizeNode(tree, image);
             foreach (ContourNode child in tree.Children)
@@ -333,7 +332,7 @@ namespace SetVision.Vision
                 ColorizeTree(child, image);
             }
         }
-        private void ColorizeNode(ContourNode node, Image<Bgr, Byte> image)
+        private static void ColorizeNode(ContourNode node, Image<Bgr, Byte> image)
         {
             if (node.Shape != null
                 && node.Contour.Area > 100
@@ -347,7 +346,7 @@ namespace SetVision.Vision
             }
         }
 
-        private CardColor RecognizeColor(Image<Bgr, Byte> _image, ContourNode node)
+        private static CardColor RecognizeColor(Image<Bgr, Byte> _image, ContourNode node)
         {
             /* Set the contour as the ROI of the image
              * Make an empty image on which you fill the inner of the contour. This is the mask. 
@@ -363,25 +362,31 @@ namespace SetVision.Vision
             Image<Gray, Byte> mask;
             Image<Bgr, Byte> focusBgr = ExtractContourImage(_image, contour, out mask);
 
-            focusBgr = RemoveCardColor(node, focusBgr);
+            Image<Bgr, Byte> colfinder = focusBgr; // RemoveCardColor(node, focusBgr);
             
             Bgr avgBgr = new Bgr();
             MCvScalar scr1 = new MCvScalar();
-            focusBgr.AvgSdv(out avgBgr, out scr1, mask);
+            colfinder.AvgSdv(out avgBgr, out scr1, mask);
 
-            Image<Hsv, Byte> focusHsv = focusBgr.Convert<Hsv, Byte>();
+            Image<Hsv, Byte> focusHsv = colfinder.Convert<Hsv, Byte>();
             Hsv avgHsv = new Hsv();
             MCvScalar scr2 = new MCvScalar();
             focusHsv.AvgSdv(out avgHsv, out scr2, mask);
             #endregion
 
-            
             CardColor color = ClassifyColor(avgBgr, avgHsv);
-            //ContourNode parent = node.FindParent(Shape.Card, null, null);
-            //if (parent != null)
-            //{
-            //    double colDist = ColorDistance(avgBgr, parent.averageBgr);
-            //}
+            CardColor color2= CardColor.White;
+            if (!isGray(avgBgr, 20))
+            {
+                color2 = ClassifyBgr(avgBgr);
+            }
+            
+            ContourNode parent = node.FindParent(Shape.Card, null, null);
+            double colDist = double.MaxValue;
+            if (parent != null)
+            {
+                colDist = ColorDistance(avgBgr, parent.averageBgr);
+            }
             node.averageBgr = avgBgr;
             node.averageHsv = avgHsv;
             #region debug
@@ -407,12 +412,12 @@ namespace SetVision.Vision
             #endregion
 
             focusBgr.ROI = contour.GetMinAreaRect().MinAreaRect();
-            node.image = focusBgr;
+            node.Image = focusBgr;
 
             return color;
         }
 
-        private CardColor ClassifyColor(Bgr avgBgr, Hsv avgHsv)
+        private static CardColor ClassifyColor(Bgr avgBgr, Hsv avgHsv)
         {
             if (avgHsv.Satuation < 30)
             {
@@ -440,7 +445,7 @@ namespace SetVision.Vision
             }
         }
 
-        private Image<Bgr, Byte> ExtractContourImage(Image<Bgr, Byte> image, Contour<Point> contour, out Image<Gray, Byte> mask)
+        private static Image<Bgr, Byte> ExtractContourImage(Image<Bgr, Byte> image, Contour<Point> contour, out Image<Gray, Byte> mask)
         {
             mask = image.Convert<Gray, Byte>();
             mask.SetZero();
@@ -450,7 +455,7 @@ namespace SetVision.Vision
             return image.And(new Bgr(255, 255, 255), mask);
         }
 
-        private void ShiftContour(ref Contour<Point> orig, int x, int y)
+        private static void ShiftContour(ref Contour<Point> orig, int x, int y)
         {
             //for (int i = 0; i <= orig.Count<Point>()-1; i++)
             //{
@@ -491,7 +496,7 @@ namespace SetVision.Vision
             //}
         }
 
-        private Image<Bgr, Byte> RemoveCardColor(ContourNode node, Image<Bgr, Byte> removeFrom)
+        private static Image<Bgr, Byte> RemoveCardColor(ContourNode node, Image<Bgr, Byte> removeFrom)
         {
             ContourNode parentCard = node.FindParent(Shape.Card, null, null);
             if (parentCard != null)
@@ -500,18 +505,84 @@ namespace SetVision.Vision
                 //Image<Bgr, Byte> thresholded = eroded.ThresholdBinary(parentCard.averageBgr, new Bgr(255,255,255));
                 //return thresholded;
                 Image<Gray, Byte> gray = removeFrom.Convert<Gray, Byte>();
+
+                Image<Bgr, Byte> subbed = removeFrom.AbsDiff(parentCard.averageBgr);
+                Image<Gray, Byte> gray2 = subbed.Convert<Gray, Byte>();
+                
+                double[] mins, maxs;
+                Point[] minlocs, maxlocs;
+                gray2.MinMax(out mins, out maxs, out minlocs, out maxlocs);
+                Point maxloc = maxlocs[0];
+                Bgr colorAtMaxloc = removeFrom[maxloc];
+                Image<Bgr, Byte> maxcolor = removeFrom.Clone();
+                maxcolor.SetValue(colorAtMaxloc);
+
                 Image<Bgr, Byte> multiplier = new Image<Bgr, byte>(new Image<Gray, byte>[] { gray, gray, gray });
                 Image<Bgr, Byte> mul = removeFrom.Mul(multiplier, 0.015);
                 Image<Bgr, Byte> threshed = mul.ThresholdToZeroInv(new Bgr(254, 254, 254));
                 Image<Gray, Byte> mask = threshed.Convert<Gray, Byte>();
                 Image<Bgr, Byte> result = mul.And(new Bgr(255, 255, 255), mask);
+
+                multiplier._Erode(1);
                 result = result.Mul(multiplier, 0.005);
-                return result;
+
+                double[] mins2, maxs2;
+                Point[] minlocs2, maxlocs2;
+                result.MinMax(out mins2, out maxs2, out minlocs2, out maxlocs2);
+                double max2 = maxs2[0];
+                double scale = 255 / max2;
+                Image<Bgr, Byte> maxxed = result.Mul(scale);
+                maxxed._Dilate(1);
+                return maxxed;
+
+                //return maxcolor;
             }
             else
             {
                 return removeFrom;
             }
+        }
+
+        private static CardColor ClassifyBgr(Bgr col)
+        {
+            if (col.Red > col.Blue && col.Red > col.Green)
+                //if red has the highest value
+            {
+                return CardColor.Red;
+            }
+            else if (col.Green > col.Blue && col.Green > col.Red)
+            {
+                //if green has the highest value
+                return CardColor.Green;
+            }
+            else if (col.Blue > col.Green && col.Red > col.Green)
+            {
+                //if blue and red are the highest
+                return CardColor.Purple;
+            }
+            else
+            {
+                return CardColor.Other;
+            }
+        }
+
+        /// <summary>
+        /// Check if R, G and B are closer than range together
+        /// </summary>
+        /// <param name="col"></param>
+        /// <param name="range"></param>
+        /// <returns></returns>
+        private static bool isGray(Bgr col, double range)
+        {
+            double bg = Math.Abs(col.Blue - col.Green);
+            double gr = Math.Abs(col.Green - col.Red);
+            double rb = Math.Abs(col.Red - col.Blue);
+
+            bool bgOK = (bg <= range);
+            bool grOK = (gr <= range);
+            bool rbOK = (rb <= range);
+
+            return bgOK && grOK && rbOK;
         }
 
         #endregion
@@ -521,7 +592,7 @@ namespace SetVision.Vision
         /// connecting its children to its parent (A-B-C) to (A-C)
         /// </summary>
         /// <param name="tree"></param>
-        public void StripDoubles(ContourNode tree)
+        public static void StripDoubles(ContourNode tree)
         {
             if (tree.Parent != null)
             {
@@ -551,7 +622,7 @@ namespace SetVision.Vision
          * If there is a child with the same color, it Dashed.
          */
 
-        public IEnumerable<KeyValuePair<Card, ContourNode>> GiveCards(ContourNode tree)
+        public static IEnumerable<KeyValuePair<Card, ContourNode>> GiveCards(ContourNode tree)
         {
             if (tree.Shape == Shape.Card)
             {
@@ -582,7 +653,7 @@ namespace SetVision.Vision
             //    }
             //}
         }
-        public KeyValuePair<Card, ContourNode> AnalyzeNode(ContourNode cardNode)
+        public static KeyValuePair<Card, ContourNode> AnalyzeNode(ContourNode cardNode)
         {
             if (cardNode.Shape != Shape.Card)
             {
@@ -603,7 +674,7 @@ namespace SetVision.Vision
             }
         }
 
-        private Fill DetermineFill(ContourNode cardNode)
+        private static Fill DetermineFill(ContourNode cardNode)
         {
             Fill fill = Fill.Other;
             ContourNode outer = cardNode.Children[0];
@@ -640,7 +711,7 @@ namespace SetVision.Vision
             return fill;
         }
 
-        private double ColorDistance(Bgr a, Bgr b)
+        private static double ColorDistance(Bgr a, Bgr b)
         {
             //do an euclidian distance on R, G and B
             double blue = Math.Abs(a.Blue-b.Blue) * Math.Abs(a.Blue-b.Blue);
