@@ -1,0 +1,16 @@
+fill;	h;		s;		v;		dist;
+solid;	137;	131;	114;	120;	DASHing bijna niet te zien (rood)
+solid;	175;	222;	135;	123;
+solid;	148;	149;	91;		113;
+solid;	175;	211;	197;	127;	DASHing bijna niet te zien (rood)
+solid;	175;	207;	190;	132;
+solid;	149;	148;	108;	116;
+solid;	73;		176;	113;	172;
+dashed;	78;		40;		150;	95;
+dashed;	175;	144;	146;	52;
+dashed;	175;	108;	197;	41;	
+open;	174;	76;		194;	9;
+open;	159;	37;		184;	6;
+
+om te zien of dashed: ROI iets terugschalen om alleen de strepen te hebben
+Dan, afgeleide of integraal nemen. als de max daarvan laag is, is het een glad vlak, dus solid of open

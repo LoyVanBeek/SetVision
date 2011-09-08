@@ -55,7 +55,7 @@ namespace SetVision
         public void Populate(ContourNode tree)
         {
             TreeViewItem item = new TreeViewItem();
-            item.Header = tree.Shape + ":" + tree.Color.ToString() + ":" + tree.Fill.ToString();
+            item.Header = tree.Shape + ":" + tree.Color.ToString() + ":" + tree.Fill.ToString()+ ":" + tree.Children.Count;
             ContourTree.Items.Add(item);
 
             foreach (ContourNode child in tree.Children)
@@ -68,9 +68,9 @@ namespace SetVision
         {
             TreeViewItem item = new TreeViewItem();
 
-            item.Header = tree.Shape + ":" + tree.Color.ToString() + ":" + tree.Fill.ToString();
+            item.Header = tree.Shape + ":" + tree.Color.ToString() + ":" + tree.Fill.ToString() + ":" + tree.Children.Count;
             Label lbl = new Label();
-            lbl.Content = tree.Shape + ":" + tree.Color.ToString() + ":" + tree.Fill.ToString();
+            lbl.Content = tree.Shape + ":" + tree.Color.ToString() + ":" + tree.Fill.ToString() + ":" + tree.Children.Count;
 
             Image img = new Image();
             if (tree.Image != null)

@@ -8,7 +8,7 @@ using Emgu.CV.Structure;
 using Emgu.CV;
 using Emgu.CV.ML;
 
-namespace SetVision.Vision
+namespace SetVision.Learning
 {
     public class BgrHsvClassifier
     {

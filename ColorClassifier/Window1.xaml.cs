@@ -1,15 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
+﻿using System.Collections.Generic;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Media;
-using Emgu.CV;
-using Emgu.CV.ML;
 using Emgu.CV.Structure;
-using SetVision.Gamelogic;
-using System.Drawing;
-using SetVision.Vision;
+using SetVision.Learning;
 
 namespace ColorClassifier
 {

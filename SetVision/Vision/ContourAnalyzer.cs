@@ -1,19 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using SetVision.Gamelogic;
 using System.Drawing;
-using Emgu.CV.Structure;
 using Emgu.CV;
-using Emgu.CV.UI;
 using Emgu.CV.CvEnum;
+using Emgu.CV.Structure;
+using Emgu.CV.UI;
+using SetVision.Gamelogic;
+using SetVision.Learning;
 
 namespace SetVision.Vision
 {
     public class ContourAnalyzer : ICardDetector
     {
         static BgrHsvClassifier classifier;
+
+        static BgrClassifier bgrClassifier;
+        static HsvClassifier hsvClassifier;
 
         /// <summary>
         /// LocateCards works by analyzing the contours in the image. 
@@ -30,6 +32,9 @@ namespace SetVision.Vision
         {
             classifier = new BgrHsvClassifier();
             classifier.Train();
+
+            bgrClassifier = new BgrClassifier();
+            hsvClassifier = new HsvClassifier();
 
             #region process image
             //Convert the image to grayscale and filter out the noise
@@ -52,26 +57,25 @@ namespace SetVision.Vision
             ContourNode tree = new ContourNode(contours);
             AssignShapes(tree);
             AssignImages(tree, table, true);
-
             AssignColors(tree, table);
+            AssignFills(tree);
 
             Dictionary<Card, Point> cardlocs = new Dictionary<Card, Point>();
-            //NOT YET WORKING, DEPENDS ON PREVIOUS CODE
-            //foreach (KeyValuePair<Card, ContourNode> pair in GiveCards(tree))
-            //{
-            //    ContourNode node = pair.Value;
-            //    Card card = pair.Key;
+            foreach (KeyValuePair<Card, ContourNode> pair in GiveCards(tree))
+            {
+                ContourNode node = pair.Value;
+                Card card = pair.Key;
 
-            //    PointF fcenter = node.Contour.GetMinAreaRect().center;
-            //    Point center = new Point((int)fcenter.X, (int)fcenter.Y);
+                PointF fcenter = node.Contour.GetMinAreaRect().center;
+                Point center = new Point((int)fcenter.X, (int)fcenter.Y);
 
-            //    cardlocs.Add(card, center);
-            //}
+                cardlocs.Add(card, center);
+            }
 
             #region draw
 #if DEBUG
-            DrawContours(tree, table);
-            TreeViz.VizualizeTree(tree);
+            //DrawContours(tree, table);
+            //TreeViz.VizualizeTree(tree);
             //ImageViewer.Show(table);
 #endif
             #endregion
@@ -373,14 +377,37 @@ namespace SetVision.Vision
             if (node.Contour.Area > 100
                 && ((node.Shape == Shape.Squiggle)
                     || (node.Shape == Shape.Diamond)
-                    || (node.Shape == Shape.Oval)
-                    || (node.Shape == Shape.Card)))
+                    || (node.Shape == Shape.Oval)))
             {
                 //CardColor color = RecognizeColor(image, node);
                 //CardColor color = RecognizeColor(node);
                 CardColor color = RecognizeColor2(node);
                 node.Color = color;
+
+                AssignAverageColors(node);
             }
+            else if (node.Shape == Shape.Card)
+            {
+                AssignAverageColors(node);
+            }
+
+        }
+
+        private static void AssignAverageColors(ContourNode node)
+        {
+            //Then get the average color of the card (should be white or gray)
+            Bgr avgBgr = new Bgr();
+            MCvScalar scr1 = new MCvScalar();
+            node.Image.AvgSdv(out avgBgr, out scr1, node.AttentionMask);
+
+            node.averageBgr = avgBgr;
+
+            Hsv avgHsv = new Hsv();
+            MCvScalar scr2 = new MCvScalar();
+            node.Image.Convert<Hsv, Byte>().AvgSdv(out avgHsv, out scr2, node.AttentionMask);
+
+            node.averageBgr = avgBgr;
+            node.averageHsv = avgHsv;
         }
 
         #region old method
@@ -583,7 +610,8 @@ namespace SetVision.Vision
                 //if green has the highest value
                 return CardColor.Green;
             }
-            else if (col.Blue > col.Green && col.Red > col.Green)
+            else if (col.Blue > col.Green && col.Red > col.Green
+                && Math.Abs(col.Blue - col.Red) < 30) //There must be about the same amount of R and B
             {
                 //if blue and red are the highest
                 return CardColor.Purple;
@@ -719,7 +747,7 @@ namespace SetVision.Vision
         }
         #endregion
 
-        #region trained classifier
+        #region decide on best colored pixel
         private static CardColor RecognizeColor2(ContourNode node)
         {
             //First, flatten the images of all children to 1 image which we can analyze
@@ -738,9 +766,18 @@ namespace SetVision.Vision
             Point bestpos = FindBestColoredPixel(image);
             bgr = image[bestpos];
             hsv = hsvFlat[bestpos];
+                        
+            //WORKS:
+            //CardColor colorHsv = classifier.Classify(hsv); 
+            //CardColor colorBgr = classifier.Classify(bgr); 
 
-            CardColor colorHsv = classifier.Classify(hsv);
-            CardColor colorBgr = classifier.Classify(bgr);
+            //DOES NOT WORK for some reason
+            //CardColor colorHsv = hsvClassifier.Classify(hsv);
+            //CardColor colorBgr = bgrClassifier.Classify(bgr);
+
+            //Trying something out
+            CardColor colorBgr = ClassifyBgr(bgr);
+            CardColor colorHsv = colorBgr; //part of tryout
             CardColor verdict = colorHsv;
             if (verdict == CardColor.Other)
             {
@@ -824,6 +861,130 @@ namespace SetVision.Vision
 
         #endregion
 
+        #region fill
+        private static void AssignFills(ContourNode tree)
+        {
+            AssignFill(tree);
+            foreach (ContourNode child in tree.Children)
+            {
+                AssignFill(child);
+                AssignFills(child);
+            }
+        }
+
+        private static void AssignFill(ContourNode node)
+        {
+            if (node.Shape == Shape.Card)
+            {
+                node.Fill = DetermineFill2(node); 
+            }
+        }
+
+        private static Fill DetermineFill(ContourNode cardNode)
+        {
+            Fill fill = Fill.Other;
+            ContourNode outer = cardNode.Children[0];
+            ContourNode inner = outer.Children[0];
+
+            double card2blobBGRdist = ColorDistance(cardNode.averageBgr, inner.averageBgr);
+            double card2blobHSVdist = ColorDistance(cardNode.averageHsv, inner.averageHsv);
+
+            //Als card2blobBGRdist < 60: dan waarschijnlijk dashed, maar wel in de aangegeven kleur. 
+            //Dit moet als eerste gechecked worden
+
+            if ((inner.Color == CardColor.Other ||
+                    inner.Color == CardColor.Green ||
+                    inner.Color == CardColor.Red ||
+                    inner.Color == CardColor.Purple)
+                &&
+                card2blobBGRdist < 60)
+            {
+                fill = Fill.Dashed;
+            }
+            else if (inner.Color == CardColor.Green ||
+                inner.Color == CardColor.Red ||
+                inner.Color == CardColor.Purple)
+            {
+                fill = Fill.Solid;
+            }
+            else if (inner.Color == CardColor.White)
+            {
+                fill = Fill.Open;
+            }
+            else
+            {
+                fill = Fill.Other;
+            }
+
+            inner.Fill = fill;
+            outer.Fill = fill;
+
+            return fill;
+        }
+
+        private static Fill DetermineFill2(ContourNode cardNode)
+        {
+            Fill fill = Fill.Other;
+            ContourNode outer = cardNode.Children[0];
+            ContourNode inner = outer.Children[0];
+
+            double bgrDist = ColorDistance(cardNode.averageBgr, inner.averageBgr);
+            double hsvDist = ColorDistance(cardNode.averageHsv, inner.averageHsv);
+
+            if (hsvDist < 20)
+            {
+                fill = Fill.Open;
+            }
+            else if (hsvDist > 100)
+            {
+                fill = Fill.Solid;
+            }
+            else if(isDashed(inner))
+            {
+                fill = Fill.Dashed;
+            }
+            
+            outer.Fill = fill;
+            inner.Fill = fill;
+            return fill;
+        }
+
+        private static bool isDashed(ContourNode inner)
+        {
+            Image<Bgr, Byte> im = inner.Image.Clone();
+            Rectangle oldroi = inner.Image.ROI;
+            Rectangle newroi = new Rectangle(oldroi.X + 20, oldroi.Y + 10, oldroi.Width - 40, oldroi.Height - 20);
+            im.ROI = newroi;
+
+            Image<Bgr, float> laplace = im.Laplace(1);
+
+            double[] mins, maxs;
+            Point[] minlocs, maxlocs; 
+            laplace.MinMax(out mins, out maxs, out minlocs, out maxlocs);
+
+            return (maxs[0] > 10);
+        }
+
+        private static double ColorDistance(Bgr a, Bgr b)
+        {
+            //do an euclidian distance on R, G and B
+            double blue = Math.Abs(a.Blue - b.Blue) * Math.Abs(a.Blue - b.Blue);
+            double green = Math.Abs(a.Green - b.Green) * Math.Abs(a.Green - b.Green);
+            double red = Math.Abs(a.Red - b.Red) * Math.Abs(a.Red - b.Red);
+            double result = Math.Sqrt(blue + green + red);
+            return result;
+        }
+        private static double ColorDistance(Hsv a, Hsv b)
+        {
+            //do an euclidian distance on R, G and B
+            double blue = Math.Abs(a.Hue - b.Hue) * Math.Abs(a.Hue - b.Hue);
+            double green = Math.Abs(a.Satuation - b.Satuation) * Math.Abs(a.Satuation - b.Satuation);
+            double red = Math.Abs(a.Value - b.Value) * Math.Abs(a.Value - b.Value);
+            double result = Math.Sqrt(blue + green + red);
+            return result;
+        }
+        #endregion
+
         public static IEnumerable<KeyValuePair<Card, ContourNode>> GiveCards(ContourNode tree)
         {
             if (tree.Shape == Shape.Card)
@@ -834,26 +995,12 @@ namespace SetVision.Vision
             {
                 foreach (ContourNode child in tree.Children)
                 {
-                    foreach(KeyValuePair<Card, ContourNode> pair in GiveCards(child))
+                    foreach (KeyValuePair<Card, ContourNode> pair in GiveCards(child))
                     {
                         yield return pair;
                     }
                 }
             }
-
-
-            //Stack<ContourNode> stack = new Stack<ContourNode>();
-            //stack.Push(tree);
-
-            //ContourNode current = null;
-            //while (true)
-            //{
-            //    while (stack.Count > 0)
-            //    {
-            //        stack.Push(current);
-            //        current = current.Children[0];
-            //    }
-            //}
         }
         public static KeyValuePair<Card, ContourNode> AnalyzeNode(ContourNode cardNode)
         {
@@ -865,62 +1012,13 @@ namespace SetVision.Vision
             {
                 int count = cardNode.Children.Count;
                 CardColor color = cardNode.Children[0].Color;
-
-                Fill fill = DetermineFill(cardNode);
-
                 Shape shape = cardNode.Children[0].Shape;
-                
-                Card card = new Card(color, shape, fill, count);
-                cardNode.Fill = fill;
+                Card card = new Card(color, shape, cardNode.Fill, count);
+
+                cardNode.Color = color; //Set this, the card's background is actually white, but this color matters for the game and in debugging
+
                 return new KeyValuePair<Card, ContourNode>(card, cardNode);
             }
-        }
-
-        private static Fill DetermineFill(ContourNode cardNode)
-        {
-            Fill fill = Fill.Other;
-            ContourNode outer = cardNode.Children[0];
-            ContourNode inner = outer.Children[0];
-
-            double card2blobColordist = ColorDistance(cardNode.averageBgr, inner.averageBgr);
-
-            //Als distance < 60: dan waarschijnlijk dashed, maar wel in de aangegeven kleur. 
-            //Dit moet als eerste gechecked worden
-            
-            if ((inner.Color == CardColor.Other ||
-                    inner.Color == CardColor.Green ||
-                    inner.Color == CardColor.Red ||
-                    inner.Color == CardColor.Purple)
-                &&
-                card2blobColordist < 60)
-            {
-                fill = Fill.Dashed;
-            }
-            else if (inner.Color == CardColor.Green  || 
-                inner.Color == CardColor.Red    || 
-                inner.Color == CardColor.Purple)
-            {
-                fill = Fill.Solid;
-            }
-            else if (inner.Color == CardColor.White)
-            {
-                fill = Fill.Open;
-            }
-
-            inner.Fill = fill;
-            outer.Fill = fill;
-
-            return fill;
-        }
-
-        private static double ColorDistance(Bgr a, Bgr b)
-        {
-            //do an euclidian distance on R, G and B
-            double blue = Math.Abs(a.Blue-b.Blue) * Math.Abs(a.Blue-b.Blue);
-            double green = Math.Abs(a.Green-b.Green) * Math.Abs(a.Green-b.Green);
-            double red = Math.Abs(a.Red-b.Red) * Math.Abs(a.Red-b.Red);
-            double result = Math.Sqrt(blue + green + red);
-            return result;
         }
     }
 }

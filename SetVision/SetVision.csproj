@@ -110,6 +110,11 @@
     <Compile Include="Gamelogic\Card.cs" />
     <Compile Include="Gamelogic\Combinatorics\ListExtensions.cs" />
     <Compile Include="Gamelogic\Logic.cs" />
+    <Compile Include="Learning\BgrClassifier.cs" />
+    <Compile Include="Learning\Classifier.cs" />
+    <Compile Include="Learning\HsvClassifier.cs" />
+    <Compile Include="Learning\KmeansClassifier.cs" />
+    <Compile Include="Learning\IClassifier.cs" />
     <Compile Include="ParametrizeSurf.xaml.cs">
       <DependentUpon>ParametrizeSurf.xaml</DependentUpon>
     </Compile>
@@ -129,7 +134,7 @@
     <Compile Include="TreeViz.xaml.cs">
       <DependentUpon>TreeViz.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Vision\BgrHsvClassifier.cs" />
+    <Compile Include="Learning\BgrHsvClassifier.cs" />
     <Compile Include="Vision\CardContour.cs" />
     <Compile Include="Vision\ContourAnalyzer.cs" />
     <Compile Include="Vision\ContourNode.cs" />
