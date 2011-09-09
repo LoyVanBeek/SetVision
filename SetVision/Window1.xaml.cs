@@ -10,6 +10,9 @@ using Emgu.CV.UI;
 using SetVision.Vision;
 using SetVision.Gamelogic;
 using System.Collections.Generic;
+using System.Windows.Forms;
+using System.IO;
+using System.Windows.Media;
 
 namespace SetVision
 {
@@ -21,13 +24,6 @@ namespace SetVision
         public Window1()
         {
             InitializeComponent();
-
-            this.Loaded += new RoutedEventHandler(Window1_Loaded);
-        }
-
-        void Window1_Loaded(object sender, RoutedEventArgs e)
-        {
-            this.Title = "Play Set with a photo";
         }
 
         private Image<Bgr, Byte> Run(string filename)
@@ -38,6 +34,10 @@ namespace SetVision
             ContourAnalyzer ca = new ContourAnalyzer();
             Image<Bgr, Byte> table = new Image<Bgr, byte>(filename);
             table = table.PyrDown().PyrDown();//.PyrDown().PyrUp();
+
+            //ImageSource bitmap = TreeViz.ToBitmapSource(table);
+            //Shower.Source = bitmap;
+
             Dictionary<Card, System.Drawing.Point> cards = ca.LocateCards(table);
 
             Logic logic = new Logic();
@@ -51,6 +51,13 @@ namespace SetVision
 
             watch.Stop();
             this.Title = String.Format("Done. Elapsed time: {0}", watch.Elapsed.ToString());
+
+            //shower.Show();
+            //shower.FunctionalMode = ImageBox.FunctionalModeOption.PanAndZoom;
+            //shower.Image = table;
+
+            ImageSource bitmap = TreeViz.ToBitmapSource(table);
+            Shower.Source = bitmap;
 
             return table;
         }
@@ -74,8 +81,59 @@ namespace SetVision
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            var table = Run(@"images/scene4.jpg");
-            ImageViewer.Show(table); 
+            //var table = Run(@"images/scene3.jpg");
+
+            FileInfo file = new FileInfo(PathBox.Text);
+            if(!file.Exists)
+            {
+                PathBox.Background = System.Windows.Media.Brushes.Red;
+            }
+
+            try
+            {
+                var table = Run(file.FullName);
+                //ImageViewer.Show(table);
+            }
+            catch (SetGameException sge)
+            {
+                InvalidCardException ice = sge as InvalidCardException;
+                if (ice != null)
+                {
+                    System.Windows.MessageBox.Show(
+                        "Tried to create a card with an invalid property: "+ice.Property+"="+ice.Value, 
+                        "Invalid card detected"
+                        );
+                }
+            } 
+        }
+
+        private void Browse_Click(object sender, RoutedEventArgs e)
+        {
+            OpenFileDialog dlg = new OpenFileDialog();
+
+            DialogResult result = dlg.ShowDialog();
+            string filename = dlg.FileName;
+            FileInfo info = new FileInfo(filename);
+            if (!info.Exists)
+            {
+                RunButton.IsEnabled = false;
+            }
+            else
+            {
+                RunButton.IsEnabled = true;
+                PathBox.Text = info.FullName;
+
+                try
+                {
+                    Image<Bgr, Byte> table = new Image<Bgr, byte>(info.FullName);
+                    ImageSource bitmap = TreeViz.ToBitmapSource(table.PyrDown().PyrDown());
+                    Shower.Source = bitmap;
+                }
+                catch (Exception ex)
+                {
+                    throw ex;
+                }
+            }
         }
     }
 }

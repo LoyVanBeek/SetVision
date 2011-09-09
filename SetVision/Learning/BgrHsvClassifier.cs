@@ -30,9 +30,9 @@ namespace SetVision.Learning
         private IEnumerable<KeyValuePair<ColorPair, CardColor>> GenerateTrainPairs()
         {
             DirectoryInfo colordebug = new DirectoryInfo(@"D:\Development\OpenCV\SetVision\SetVision\bin\Debug\colordebug");
-            DirectoryInfo pass4 = colordebug.GetDirectories("Pass 4")[0];
+            DirectoryInfo traindir = colordebug.GetDirectories("Pass 9")[0];
 
-            foreach (DirectoryInfo colordir in pass4.GetDirectories())
+            foreach (DirectoryInfo colordir in traindir.GetDirectories())
             {
                 CardColor color = CardColor.Other;
                 string colname = colordir.Name.ToLower();

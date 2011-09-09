@@ -16,8 +16,8 @@ namespace SetVision.Learning
         {
             kmeans = new KmeansClassifier();
 
-            Dictionary<float[], int> data = new Dictionary<float[], int>();
-            foreach (KeyValuePair<float[], int> item in GenerateTrainPairs())
+            Dictionary<float[], string> data = new Dictionary<float[], string>();
+            foreach (KeyValuePair<float[], string> item in GenerateTrainStringPairs())
             {
                 data.Add(item.Key, item.Value);
             }
@@ -58,6 +58,30 @@ namespace SetVision.Learning
                     {
                         float[] array = new float[] { (float)bgr.Blue, (float)bgr.Green, (float)bgr.Red };
                         KeyValuePair<float[], int> pair = new KeyValuePair<float[], int>(array, (int)color);
+                        yield return pair;
+                    }
+                }
+            }
+        }
+
+        private IEnumerable<KeyValuePair<float[], string>> GenerateTrainStringPairs()
+        {
+            DirectoryInfo colordebug = new DirectoryInfo(@"D:\Development\OpenCV\SetVision\SetVision\bin\Debug\colordebug");
+            DirectoryInfo pass4 = colordebug.GetDirectories("Pass 9")[0];
+
+            foreach (DirectoryInfo colordir in pass4.GetDirectories())
+            {
+                string colname = colordir.Name.ToLower();
+
+                foreach (FileInfo file in colordir.GetFiles())
+                {
+                    Bgr bgr; Hsv hsv;
+                    fileNameToColors(file.Name, out bgr, out hsv);
+                    if (!bgr.Equals(new Bgr()) && !hsv.Equals(new Hsv()))
+                    {
+                        float[] array = new float[] { (float)bgr.Blue, (float)bgr.Green, (float)bgr.Red };
+                        KeyValuePair<float[], string> pair = 
+                            new KeyValuePair<float[], string>(array, colname);
                         yield return pair;
                     }
                 }
@@ -110,8 +134,28 @@ namespace SetVision.Learning
         public CardColor Classify(Bgr value)
         {
             float[] array = new float[] { (float)value.Blue, (float)value.Green, (float)value.Red };
-            CardColor outcome = (CardColor)kmeans.Classify(array);
-            return outcome;
+            //CardColor outcome = (CardColor)kmeans.Classify(array);
+            string colname = kmeans.ClassifyToString(array);
+
+            CardColor color = CardColor.Other;
+            if (colname.Contains("purple"))
+            {
+                color = CardColor.Purple;
+            }
+            else if (colname.Contains("green"))
+            {
+                color = CardColor.Green;
+            }
+            else if (colname.Contains("red"))
+            {
+                color = CardColor.Red;
+            }
+            else if (colname.Contains("white"))
+            {
+                color = CardColor.White;
+            }
+
+            return color;
         }
     }
 }

@@ -1,8 +1,35 @@
 ﻿<Window x:Class="SetVision.Window1"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    Title="Window1" Height="300" Width="300">
+    WindowState="Maximized"
+    Title="Play Set with a photo">
     <Grid>
-        <Button Click="Button_Click"/>
+        <Grid.RowDefinitions>
+            <RowDefinition/>
+            <RowDefinition/>
+            <RowDefinition Height="640"/>
+        </Grid.RowDefinitions>
+        <Grid HorizontalAlignment="Stretch"
+              Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition Width="100"/>
+            </Grid.ColumnDefinitions>
+            <TextBox 
+                x:Name="PathBox"
+                Grid.Column="0">
+                images/scene3.jpg
+            </TextBox>
+            <Button 
+                x:Name="Browse"
+                Click="Browse_Click"
+                Grid.Column="1" HorizontalAlignment="Stretch">
+                Browse
+            </Button>
+        </Grid>
+        <Button x:Name="RunButton"
+            Click="Button_Click" Content="Find sets" IsEnabled="True"
+            Grid.Row="1"/>
+        <Image x:Name="Shower" Grid.Row="2"/>
     </Grid>
 </Window>

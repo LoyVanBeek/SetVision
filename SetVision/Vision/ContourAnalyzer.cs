@@ -55,9 +55,22 @@ namespace SetVision.Vision
                 RETR_TYPE.CV_RETR_TREE);
 
             ContourNode tree = new ContourNode(contours);
+
             AssignShapes(tree);
             AssignImages(tree, table, true);
+
+            //var debug1 = table.Clone();
+            //DrawContours(tree, debug1);
+            //ImageViewer.Show(debug1);
+
+            FilterTree(tree);
+
+            //var debug2 = table.Clone();
+            //DrawContours(tree, debug2);
+            //ImageViewer.Show(debug2);
+
             AssignColors(tree, table);
+            //TreeViz.VizualizeTree(tree);
             AssignFills(tree);
 
             Dictionary<Card, Point> cardlocs = new Dictionary<Card, Point>();
@@ -72,7 +85,7 @@ namespace SetVision.Vision
                 cardlocs.Add(card, center);
             }
 
-            #region draw
+            #region draw and debug
 #if DEBUG
             //DrawContours(tree, table);
             //TreeViz.VizualizeTree(tree);
@@ -767,17 +780,21 @@ namespace SetVision.Vision
             bgr = image[bestpos];
             hsv = hsvFlat[bestpos];
 
-            //WORKS:
+            //KINDA WORKS, when used with the Pass 4 training folder, makes some mistakes. 
+            //Makes no yet detected mistakes with (more extensive) Pass 9 folder
             //CardColor colorHsv = classifier.Classify(hsv); 
-            //CardColor colorBgr = classifier.Classify(bgr); 
+            CardColor colorBgr = classifier.Classify(bgr); 
+            //CardColor test = classifier.Classify(bgr); 
 
             //DOES NOT WORK for some reason
             //CardColor colorHsv = hsvClassifier.Classify(hsv);
             //CardColor colorBgr = bgrClassifier.Classify(bgr);
+            //bgrClassifier.Classify(bgr);
 
             //Trying something out
-            CardColor colorBgr = ClassifyBgr(bgr);
+            //CardColor colorBgr = ClassifyBgr(bgr);
             CardColor colorHsv = colorBgr; //part of tryout
+            
             CardColor verdict = colorHsv;
             if (verdict == CardColor.Other)
             {
@@ -803,7 +820,7 @@ namespace SetVision.Vision
                 debug.Draw(total, ref font, new Point(20, 20), new Bgr(0, 0, 0));
                 //ImageViewer.Show(debug, total);
 
-                debug.Save("colordebug/" + total + ".png");
+                //debug.Save("colordebug/" + total + ".png");
             }
             #endregion
             return verdict;
@@ -926,27 +943,35 @@ namespace SetVision.Vision
         {
             Fill fill = Fill.Other;
             ContourNode outer = cardNode.Children[0];
-            ContourNode inner = outer.Children[0];
-
-            double bgrDist = ColorDistance(cardNode.averageBgr, inner.averageBgr);
-            double hsvDist = ColorDistance(cardNode.averageHsv, inner.averageHsv);
-
-
-            if (hsvDist < 20)
+            try
             {
-                fill = Fill.Open;
+                ContourNode inner = outer.Children[0];
+
+                double bgrDist = ColorDistance(cardNode.averageBgr, inner.averageBgr);
+                double hsvDist = ColorDistance(cardNode.averageHsv, inner.averageHsv);
+
+
+                if (hsvDist < 20)
+                {
+                    fill = Fill.Open;
+                }
+                else if (hsvDist > 100)
+                {
+                    fill = Fill.Solid;
+                }
+                else if (isDashed(inner))
+                {
+                    fill = Fill.Dashed;
+                }
+
+                outer.Fill = fill;
+                inner.Fill = fill;
             }
-            else if (hsvDist > 100)
+            catch (ArgumentOutOfRangeException)
             {
+                //The inner-node has nu children, which indicates a solid node, as being solid doesnt make edges
                 fill = Fill.Solid;
             }
-            else if (isDashed(inner))
-            {
-                fill = Fill.Dashed;
-            }
-
-            outer.Fill = fill;
-            inner.Fill = fill;
             return fill;
         }
 
@@ -1030,6 +1055,36 @@ namespace SetVision.Vision
                 cardNode.Color = color; //Set this, the card's background is actually white, but this color matters for the game and in debugging
 
                 return new KeyValuePair<Card, ContourNode>(card, cardNode);
+            }
+        }
+
+        private static void FilterTree(ContourNode tree)
+        {
+            FilterNode(tree);
+            foreach (ContourNode child in tree.Children)
+            {
+                FilterNode(child);
+                FilterTree(child);
+            }
+        }
+
+        private static void FilterNode(ContourNode node)
+        {
+            ContourNode card = node.FindParent(Shape.Card, null, null);
+
+            int minArea = 1000;
+            if (card != null)
+            {
+                minArea = (int)card.Contour.Area / 20;
+            }
+
+            for (int i = 0; i < node.Children.Count; i++)
+            {
+                ContourNode child = node.Children[i];
+                if (child.Contour.Area < minArea)
+                {
+                    node.Children.Remove(child);
+                }
             }
         }
     }

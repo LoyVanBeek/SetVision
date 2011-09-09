@@ -79,6 +79,9 @@
     <Reference Include="PresentationFramework">
       <RequiredTargetFramework>3.0</RequiredTargetFramework>
     </Reference>
+    <Reference Include="WindowsFormsIntegration">
+      <RequiredTargetFramework>3.0</RequiredTargetFramework>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <ApplicationDefinition Include="App.xaml">
@@ -141,7 +144,9 @@
     <Compile Include="Vision\EigenCardDetector.cs" />
     <Compile Include="Vision\FeatureCardDetector.cs" />
     <Compile Include="Vision\ICardDetector.cs" />
+    <Compile Include="Vision\InvalidCardException.cs" />
     <Compile Include="Vision\PolymorphContourAnalyzer.cs" />
+    <Compile Include="Vision\SetGameException.cs" />
     <Compile Include="Vision\ShapeContour.cs" />
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>

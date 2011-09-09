@@ -56,6 +56,10 @@ namespace SetVision.Vision
                 kidnode.Parent = this;
                 Children.Add(kidnode);
             }
+            //if (kids.Count > 3)
+            //{
+            //    throw new SetGameException("Found a card with more than 3 shapes on it.");
+            //}
         }
 
         #region helpers

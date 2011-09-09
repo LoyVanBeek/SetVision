@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using SetVision.Vision;
 
 namespace SetVision.Gamelogic
 {
@@ -43,19 +44,19 @@ namespace SetVision.Gamelogic
             #region validation
             if (color == CardColor.Other)
             {
-                throw new ArgumentException("Invalid color: "+color.ToString(), "color");
+                throw new InvalidCardException("color", color);
             } 
             if (shape == Shape.Other)
             {
-                throw new ArgumentException("Invalid shape: "+shape.ToString(), "shape");
+                throw new InvalidCardException("shape", shape);
             }
             if (fill == Fill.Other)
             {
-                throw new ArgumentException("Invalid fill: " + fill.ToString(), "fill");
+                throw new InvalidCardException("fill", fill);
             }
             if (count > 3 || count < 1)
             {
-                throw new ArgumentException("Invalid count: " + count.ToString(), "count");
+                throw new InvalidCardException("count", count);
             }
             #endregion validation
 
