@@ -157,7 +157,12 @@ namespace SetVision.Learning
             toClassify[0, 2] = (float)bgr.Red;
 
             Matrix<float> classification = new Matrix<float>(1, 1);
-            bgrClassifier.FindNearest(toClassify, 5, classification, null, null, null);
+            bgrClassifier.FindNearest(toClassify, 
+                5, 
+                classification, 
+                null, 
+                null, 
+                null);
             CardColor color = (CardColor)classification[0, 0];
 
             return color;

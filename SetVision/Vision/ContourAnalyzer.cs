@@ -45,8 +45,8 @@ namespace SetVision.Vision
             Gray circleAccumulatorThreshold = new Gray(120);
 
             Image<Gray, Byte> cannyEdges = gray.Canny(cannyThreshold, cannyThresholdLinking);
-            
-            StructuringElementEx el = new StructuringElementEx(3,3, 1,1,CV_ELEMENT_SHAPE.CV_SHAPE_RECT);
+
+            StructuringElementEx el = new StructuringElementEx(3, 3, 1, 1, CV_ELEMENT_SHAPE.CV_SHAPE_RECT);
             cannyEdges = cannyEdges.MorphologyEx(el, CV_MORPH_OP.CV_MOP_CLOSE, 1);
             #endregion
 
@@ -167,12 +167,12 @@ namespace SetVision.Vision
                     Point[] points = currentContour.ToArray();
                     List<LineSegment2D> edges = new List<LineSegment2D>(PointCollection.PolyLine(points, true));
 
-                    #if DEBUG
+#if DEBUG
                     #region draw
                     //Image<Bgr, Byte> debug = new Image<Bgr, Byte>(800, 800);
                     //debug.DrawPolyline(points, true, new Bgr(0, 0, 255), 1);
                     #endregion draw
-                    #endif
+#endif
                     for (int i = 0; i < edges.Count; i++)
                     {
                         double angle = edges[(i + 1) % edges.Count].GetExteriorAngleDegree(edges[i]);
@@ -198,29 +198,29 @@ namespace SetVision.Vision
 
         public static bool IsSquiggle(ContourNode node)
         {
-            bool inCard = node.Parent != null && 
+            bool inCard = node.Parent != null &&
                 (node.Parent.Shape == Shape.Card ||
                     node.Parent.Shape == Shape.Squiggle);
             bool convex = true;
 
             if (inCard)
             {
-                #if DEBUG
+#if DEBUG
                 //ShowContour(node.Contour, new Image<Bgr, Byte>(900, 900), "Squiggle");
-                #endif
+#endif
                 using (MemStorage storage = new MemStorage())
                 {
                     Contour<Point> currentContour = node.Contour.ApproxPoly(node.Contour.Perimeter * 0.01, storage);
                     Point[] points = currentContour.ToArray();
                     List<LineSegment2D> edges = new List<LineSegment2D>(PointCollection.PolyLine(points, true));
 
-                    #if DEBUG
+#if DEBUG
                     #region draw
                     //Image<Bgr, Byte> debug = new Image<Bgr, Byte>(800, 800);
                     //debug.DrawPolyline(points, true, new Bgr(0, 0, 255), 1);
                     //ImageViewer.Show(debug);
                     #endregion draw
-                    #endif
+#endif
                     //List<double> angles = new List<double>(edges.Count);
                     for (int i = 0; i < edges.Count; i++)
                     {
@@ -241,7 +241,7 @@ namespace SetVision.Vision
                     //    convex = false;
                     //}
                     //ImageViewer.Show(debug);
-                } 
+                }
             }
             return !convex && inCard;
         }
@@ -250,10 +250,10 @@ namespace SetVision.Vision
         {
             bool area = node.Contour.Area > 5000;
             MCvBox2D bounds = node.Contour.GetMinAreaRect();
-            float ratio = 
-                ((bounds.size.Width / bounds.size.Height) 
-                + 
-                (bounds.size.Height / bounds.size.Width)); 
+            float ratio =
+                ((bounds.size.Width / bounds.size.Height)
+                +
+                (bounds.size.Height / bounds.size.Width));
             //ratio is supposed to be 2.16667
 
             bool ratioOK = (ratio > 2.0 && ratio < 2.3);
@@ -268,7 +268,7 @@ namespace SetVision.Vision
             //}
             //#endif
             return ratioOK && area;
-            
+
         }
         #endregion
 
@@ -280,16 +280,16 @@ namespace SetVision.Vision
             foreach (ContourNode child in node.Children)
             {
                 canvas.DrawPolyline(child.Contour.ToArray(), true, _color, 1);
-                
+
                 if (node.Shape != null)
-	            {
-                    MCvFont font = new MCvFont(FONT.CV_FONT_HERSHEY_PLAIN, 1,1);
+                {
+                    MCvFont font = new MCvFont(FONT.CV_FONT_HERSHEY_PLAIN, 1, 1);
                     canvas.Draw(child.Shape + child.Color.ToString(),
                         ref font,
                         child.Contour[0],
                         new Bgr(System.Drawing.Color.Red)
                         );
-	            }
+                }
 
                 DrawContours(child, canvas, color);
             }
@@ -309,7 +309,7 @@ namespace SetVision.Vision
                 if (node.Shape != null)
                 {
                     MCvFont font = new MCvFont(FONT.CV_FONT_HERSHEY_PLAIN, 1, 1);
-                    canvas.Draw(child.Shape+child.Color.ToString(),
+                    canvas.Draw(child.Shape + child.Color.ToString(),
                         ref font,
                         child.Contour[0],
                         new Bgr(System.Drawing.Color.Red)
@@ -620,7 +620,7 @@ namespace SetVision.Vision
             {
                 return CardColor.Other;
             }
-        } 
+        }
         #endregion
 
         #region new method
@@ -640,7 +640,7 @@ namespace SetVision.Vision
             CardColor colorHsv = ClassifyHsv(hsv);
             CardColor colorBgr = ClassifyBgr(bgr);
             CardColor verdict = colorHsv;
-            if(verdict == CardColor.Other)
+            if (verdict == CardColor.Other)
             {
                 if (!isGray(bgr, 10))
                 {
@@ -657,9 +657,9 @@ namespace SetVision.Vision
                 debug.SetValue(bgr);
                 string BgrStr = String.Format("B{0}, G{1}, R{2}={3}", (int)bgr.Blue, (int)bgr.Green, (int)bgr.Red, colorBgr.ToString());
                 string HsvStr = String.Format("H{0}, S{1}, V{2}={3}", (int)hsv.Hue, (int)hsv.Satuation, (int)hsv.Value, colorHsv.ToString());
-                string total = BgrStr + " - " +HsvStr+" VERDICT="+verdict.ToString();
+                string total = BgrStr + " - " + HsvStr + " VERDICT=" + verdict.ToString();
 
-                MCvFont font = new MCvFont(FONT.CV_FONT_HERSHEY_PLAIN, 1,1);
+                MCvFont font = new MCvFont(FONT.CV_FONT_HERSHEY_PLAIN, 1, 1);
                 debug.Draw(total, ref font, new Point(20, 20), new Bgr(0, 0, 0));
                 //ImageViewer.Show(debug, total);
 
@@ -687,10 +687,10 @@ namespace SetVision.Vision
 
             bool vague = hsv.Satuation < 90;
 
-            bool maybeGreen     = hsv.Hue > 60 && hsv.Hue <= 70;
-            bool maybeRed       = hsv.Hue > 125 && hsv.Hue <= 155;
-            bool maybePurple    = hsv.Hue > 75 && hsv.Hue <= 100;
-            bool maybeWhite     = hsv.Hue > 100 && hsv.Hue <= 110;
+            bool maybeGreen = hsv.Hue > 60 && hsv.Hue <= 70;
+            bool maybeRed = hsv.Hue > 125 && hsv.Hue <= 155;
+            bool maybePurple = hsv.Hue > 75 && hsv.Hue <= 100;
+            bool maybeWhite = hsv.Hue > 100 && hsv.Hue <= 110;
 
             bool vagueRed = hsv.Hue > 155 && hsv.Hue <= 171;
             bool vaguePurple = hsv.Hue > 115 && hsv.Hue <= 157;
@@ -733,7 +733,7 @@ namespace SetVision.Vision
                 }
             }
         }
-        
+
         private static Image<Bgr, Byte> Flatten(ContourNode tree)
         {
             Image<Bgr, Byte> flat = new Image<Bgr, byte>(tree.Image.Size);
@@ -760,13 +760,13 @@ namespace SetVision.Vision
 
             Image<Hsv, Byte> hsvFlat = image.Convert<Hsv, Byte>();
             Hsv hsv; MCvScalar scalar2;
-            hsvFlat.AvgSdv(out hsv, out scalar2); 
+            hsvFlat.AvgSdv(out hsv, out scalar2);
             #endregion
 
             Point bestpos = FindBestColoredPixel(image);
             bgr = image[bestpos];
             hsv = hsvFlat[bestpos];
-                        
+
             //WORKS:
             //CardColor colorHsv = classifier.Classify(hsv); 
             //CardColor colorBgr = classifier.Classify(bgr); 
@@ -823,7 +823,7 @@ namespace SetVision.Vision
 
             vChannel._Not();
             Image<Gray, Byte> use = vChannel.Mul(sChannel, 0.01);
-            
+
             use.MinMax(out mins, out maxs, out minlocs, out maxlocs);
 
             Point max = maxlocs[0];
@@ -876,7 +876,7 @@ namespace SetVision.Vision
         {
             if (node.Shape == Shape.Card)
             {
-                node.Fill = DetermineFill2(node); 
+                node.Fill = DetermineFill2(node);
             }
         }
 
@@ -931,6 +931,7 @@ namespace SetVision.Vision
             double bgrDist = ColorDistance(cardNode.averageBgr, inner.averageBgr);
             double hsvDist = ColorDistance(cardNode.averageHsv, inner.averageHsv);
 
+
             if (hsvDist < 20)
             {
                 fill = Fill.Open;
@@ -939,11 +940,11 @@ namespace SetVision.Vision
             {
                 fill = Fill.Solid;
             }
-            else if(isDashed(inner))
+            else if (isDashed(inner))
             {
                 fill = Fill.Dashed;
             }
-            
+
             outer.Fill = fill;
             inner.Fill = fill;
             return fill;
@@ -953,16 +954,27 @@ namespace SetVision.Vision
         {
             Image<Bgr, Byte> im = inner.Image.Clone();
             Rectangle oldroi = inner.Image.ROI;
-            Rectangle newroi = new Rectangle(oldroi.X + 20, oldroi.Y + 10, oldroi.Width - 40, oldroi.Height - 20);
+            //TODO: make this percentage-wise
+            #region old
+            //Rectangle newroi = new Rectangle(oldroi.X + 20, oldroi.Y + 10, oldroi.Width - 40, oldroi.Height - 20); 
+            #endregion
+
+            #region new
+            double scale = 0.33;
+            Point center = new Point(oldroi.X + oldroi.Width / 2, oldroi.Y + oldroi.Height / 2);
+            Size size = new Size((int)(oldroi.Size.Width * scale), (int)(oldroi.Size.Height * scale));
+            MCvBox2D box = new MCvBox2D(center, size, 0);
+            Rectangle newroi = box.MinAreaRect();
+            #endregion
             im.ROI = newroi;
 
             Image<Bgr, float> laplace = im.Laplace(1);
 
             double[] mins, maxs;
-            Point[] minlocs, maxlocs; 
+            Point[] minlocs, maxlocs;
             laplace.MinMax(out mins, out maxs, out minlocs, out maxlocs);
 
-            return (maxs[0] > 10);
+            return (maxs[0] > 15);
         }
 
         private static double ColorDistance(Bgr a, Bgr b)

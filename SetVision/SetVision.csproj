@@ -111,7 +111,7 @@
     <Compile Include="Gamelogic\Combinatorics\ListExtensions.cs" />
     <Compile Include="Gamelogic\Logic.cs" />
     <Compile Include="Learning\BgrClassifier.cs" />
-    <Compile Include="Learning\Classifier.cs" />
+    <Compile Include="Learning\ClassifierUtils.cs" />
     <Compile Include="Learning\HsvClassifier.cs" />
     <Compile Include="Learning\KmeansClassifier.cs" />
     <Compile Include="Learning\IClassifier.cs" />

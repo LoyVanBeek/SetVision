@@ -74,7 +74,7 @@ namespace SetVision
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            var table = Run(@"images/scene3.jpg");
+            var table = Run(@"images/scene4.jpg");
             ImageViewer.Show(table); 
         }
     }
