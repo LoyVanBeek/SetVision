@@ -10,6 +10,21 @@ namespace SetVision.Learning
 {
     public class BgrClassifier
     {
+        private enum VisionColor
+        {
+            White,
+            Black,
+            Blue,
+            Brown,
+            Gray,
+            Green,
+            Orange,
+            Pink,
+            Red,
+            Yellow,
+            Purple
+        }
+
         KmeansClassifier kmeans;
 
         public BgrClassifier()
@@ -17,14 +32,19 @@ namespace SetVision.Learning
             kmeans = new KmeansClassifier();
 
             Dictionary<float[], string> data = new Dictionary<float[], string>();
-            foreach (KeyValuePair<float[], string> item in GenerateTrainStringPairs())
+            //foreach (KeyValuePair<float[], string> item in TrainDirectories_String())
+            //{
+            //    data.Add(item.Key, item.Value);
+            //}
+            foreach (KeyValuePair<float[], string> item in TrainCsv())
             {
                 data.Add(item.Key, item.Value);
             }
             kmeans.Train(data);
         }
 
-        private IEnumerable<KeyValuePair<float[], int>> GenerateTrainPairs()
+        #region train on dirs
+        private IEnumerable<KeyValuePair<float[], int>> TrainDirectories()
         {
             DirectoryInfo colordebug = new DirectoryInfo(@"D:\Development\OpenCV\SetVision\SetVision\bin\Debug\colordebug");
             DirectoryInfo pass4 = colordebug.GetDirectories("Pass 4")[0];
@@ -64,7 +84,7 @@ namespace SetVision.Learning
             }
         }
 
-        private IEnumerable<KeyValuePair<float[], string>> GenerateTrainStringPairs()
+        private IEnumerable<KeyValuePair<float[], string>> TrainDirectories_String()
         {
             DirectoryInfo colordebug = new DirectoryInfo(@"D:\Development\OpenCV\SetVision\SetVision\bin\Debug\colordebug");
             DirectoryInfo pass4 = colordebug.GetDirectories("Pass 9")[0];
@@ -130,32 +150,109 @@ namespace SetVision.Learning
             }
 
         }
+        #endregion
 
-        public CardColor Classify(Bgr value)
+        private IEnumerable<KeyValuePair<float[], string>> TrainCsv()
+        {
+            StreamReader reader = new StreamReader(@"D:\Development\OpenCV\SetVision\training_step50.csv");
+            string line = reader.ReadLine();
+            do
+            {
+                line = reader.ReadLine();
+                if (!String.IsNullOrEmpty(line.Replace(';',' ')))
+                {
+                    string[] parts = line.Split(';');
+                    float b = float.Parse(parts[0]);
+                    float g = float.Parse(parts[1]);
+                    float r = float.Parse(parts[2]);
+
+                    string color = parts[4].ToLower(); //4rd is empty, so take 5th column
+
+                    yield return new KeyValuePair<float[], string>(new float[] { r, g, b }, color); 
+                }
+            } 
+            while (reader.Peek() != -1);
+        }
+
+        //public CardColor Classify(Bgr value)
+        //{
+        //    float[] array = new float[] { (float)value.Blue, (float)value.Green, (float)value.Red };
+        //    //CardColor outcome = (CardColor)kmeans.Classify(array);
+        //    string colname = kmeans.ClassifyToString(array);
+
+        //    CardColor color = CardColor.Other;
+        //    if (colname.Contains("purple"))
+        //    {
+        //        color = CardColor.Purple;
+        //    }
+        //    else if (colname.Contains("green"))
+        //    {
+        //        color = CardColor.Green;
+        //    }
+        //    else if (colname.Contains("red") || colname.Contains("pink"))
+        //    {
+        //        color = CardColor.Red;
+        //    }
+        //    else if (colname.Contains("white"))
+        //    {
+        //        color = CardColor.White;
+        //    }
+
+        //    return color;
+        //}
+
+        private VisionColor Classify_Vision(Bgr value)
         {
             float[] array = new float[] { (float)value.Blue, (float)value.Green, (float)value.Red };
             //CardColor outcome = (CardColor)kmeans.Classify(array);
             string colname = kmeans.ClassifyToString(array);
 
-            CardColor color = CardColor.Other;
-            if (colname.Contains("purple"))
-            {
-                color = CardColor.Purple;
-            }
-            else if (colname.Contains("green"))
-            {
-                color = CardColor.Green;
-            }
-            else if (colname.Contains("red"))
-            {
-                color = CardColor.Red;
-            }
-            else if (colname.Contains("white"))
-            {
-                color = CardColor.White;
-            }
+            VisionColor color = (VisionColor)Enum.Parse(typeof(VisionColor), colname, true);
 
             return color;
+        }
+
+        public CardColor Classify(Bgr value)
+        {
+            VisionColor vis = Classify_Vision(value);
+            switch (vis)
+            {
+                case VisionColor.Black: return CardColor.Other;
+                case VisionColor.Blue: return CardColor.Other;
+                case VisionColor.Brown: return CardColor.Other;
+                case VisionColor.Gray: return CardColor.White;
+                case VisionColor.Green: return CardColor.Green;
+                case VisionColor.Orange: return CardColor.Red;
+                case VisionColor.Pink: return CardColor.Red;
+                case VisionColor.Red: return CardColor.Red;
+                case VisionColor.White: return CardColor.White;
+                case VisionColor.Yellow: return CardColor.Other;
+                case VisionColor.Purple: return CardColor.Purple;
+            }
+            return CardColor.Other;
+        }
+
+        public static void Test()
+        {
+            BgrClassifier clas = new BgrClassifier();
+            CardColor c1 = clas.Classify(new Bgr(145, 110, 197));  //Purple
+            CardColor c2 = clas.Classify(new Bgr(255, 255, 255));  //White?
+            CardColor c3 = clas.Classify(new Bgr(0, 0, 250));  //Red
+            CardColor c4 = clas.Classify(new Bgr(53, 0, 250));  //Red
+            CardColor c5 = clas.Classify(new Bgr(250, 0, 250));  //Purple
+            CardColor c6 = clas.Classify(new Bgr(250, 0, 251));  //Purple
+            CardColor c7 = clas.Classify(new Bgr(240, 0, 240));  //Purple
+            CardColor c8 = clas.Classify(new Bgr(145, 110, 194));  //Purple
+            
+            bool ok1 = CardColor.Purple    == c1;  //Purple
+            bool ok2 = CardColor.White     == c2;  //White?
+            bool ok3 = CardColor.Red       == c3;  //Red
+            bool ok4 = CardColor.Red       == c4;  //Red
+            bool ok5 = CardColor.Purple    == c5;  //Purple
+            bool ok6 = CardColor.Purple    == c6;  //Purple
+            bool ok7 = CardColor.Purple    == c7;  //Purple
+            bool ok8 = CardColor.Purple    == c8;  //Purple
+
         }
     }
 }

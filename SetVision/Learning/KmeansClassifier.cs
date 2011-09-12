@@ -20,12 +20,14 @@ namespace SetVision.Learning
             Matrix<float> toClassify = ClassifierUtils.ToMatrix(vector);
 
             Matrix<float> classification = new Matrix<float>(1, 1);
+            Matrix<float> knns = new Matrix<float>(LUT.Count, 1);
+            Matrix<float> dist = new Matrix<float>(1, 1);
             classifier.FindNearest(toClassify, 
                 5, //TODO: Set all parameters in constructor
                 classification, 
+                knns, //was null
                 null, 
-                null, 
-                null);
+                null); //was null
 
             return (int)classification[0,0];
         }

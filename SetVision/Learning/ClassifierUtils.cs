@@ -36,7 +36,7 @@ namespace SetVision.Learning
             Matrix<float> toClassify = new Matrix<float>(1, vector.Length);
             for (int i = 0; i < vector.Length; i++)
             {
-                toClassify[0, 1] = vector[i];
+                toClassify[0, i] = vector[i];
             }
             return toClassify;
         }

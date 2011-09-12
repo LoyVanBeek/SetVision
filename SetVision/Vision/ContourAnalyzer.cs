@@ -17,6 +17,8 @@ namespace SetVision.Vision
         static BgrClassifier bgrClassifier;
         static HsvClassifier hsvClassifier;
 
+        static CsvWriter writer = new CsvWriter(@"D:\Development\OpenCV\SetVision\SetVision\bin\Debug\colordebug\record.csv");
+
         /// <summary>
         /// LocateCards works by analyzing the contours in the image. 
         /// For instance, the Diamond in Set is a polygon with exactly 4 vertices. 
@@ -88,11 +90,10 @@ namespace SetVision.Vision
             #region draw and debug
 #if DEBUG
             //DrawContours(tree, table);
-            //TreeViz.VizualizeTree(tree);
+            TreeViz.VizualizeTree(tree);
             //ImageViewer.Show(table);
 #endif
             #endregion
-
             return cardlocs;
         }
 
@@ -776,58 +777,75 @@ namespace SetVision.Vision
             hsvFlat.AvgSdv(out hsv, out scalar2);
             #endregion
 
-            Point bestpos = FindBestColoredPixel(image);
+            Image<Bgr, Byte> debugBest = null;
+            Point bestpos = FindBestColoredPixel(image, out debugBest);
             bgr = image[bestpos];
             hsv = hsvFlat[bestpos];
 
             //KINDA WORKS, when used with the Pass 4 training folder, makes some mistakes. 
             //Makes no yet detected mistakes with (more extensive) Pass 9 folder
-            //CardColor colorHsv = classifier.Classify(hsv); 
-            CardColor colorBgr = classifier.Classify(bgr); 
+            CardColor colorHsv1 = classifier.Classify(hsv); 
+            CardColor colorBgr1 = classifier.Classify(bgr); 
             //CardColor test = classifier.Classify(bgr); 
 
             //DOES NOT WORK for some reason
-            //CardColor colorHsv = hsvClassifier.Classify(hsv);
-            //CardColor colorBgr = bgrClassifier.Classify(bgr);
+            //CardColor colorHsv2 = hsvClassifier.Classify(hsv);
+            CardColor colorBgr2 = bgrClassifier.Classify(bgr);
             //bgrClassifier.Classify(bgr);
 
             //Trying something out
-            //CardColor colorBgr = ClassifyBgr(bgr);
-            CardColor colorHsv = colorBgr; //part of tryout
+            CardColor colorBgr3 = ClassifyBgr(bgr);
+            CardColor colorHsv3 = ClassifyHsv(hsv); ; //part of tryout
             
-            CardColor verdict = colorHsv;
+            CardColor verdict = colorBgr1;
             if (verdict == CardColor.Other)
             {
                 if (!isGray(bgr, 10))
                 {
-                    verdict = colorBgr;
+                    verdict = colorBgr3;
                 }
                 else
                 {
                     verdict = CardColor.White;
                 }
             }
+#if DEBUG
+
             #region save for training
             if (true)
             {
                 Image<Bgr, Byte> debug = new Image<Bgr, byte>(500, 200);
                 debug.SetValue(bgr);
-                string BgrStr = String.Format("B{0}, G{1}, R{2}={3}", (int)bgr.Blue, (int)bgr.Green, (int)bgr.Red, colorBgr.ToString());
-                string HsvStr = String.Format("H{0}, S{1}, V{2}={3}", (int)hsv.Hue, (int)hsv.Satuation, (int)hsv.Value, colorHsv.ToString());
+                string BgrStr = String.Format("B{0}, G{1}, R{2}={3}", (int)bgr.Blue, (int)bgr.Green, (int)bgr.Red, colorBgr3.ToString());
+                string HsvStr = String.Format("H{0}, S{1}, V{2}={3}", (int)hsv.Hue, (int)hsv.Satuation, (int)hsv.Value, colorHsv3.ToString());
                 string total = BgrStr + " - " + HsvStr + " VERDICT=" + verdict.ToString();
 
                 MCvFont font = new MCvFont(FONT.CV_FONT_HERSHEY_PLAIN, 1, 1);
                 debug.Draw(total, ref font, new Point(20, 20), new Bgr(0, 0, 0));
                 //ImageViewer.Show(debug, total);
-
-                //debug.Save("colordebug/" + total + ".png");
+                writer.Write((int)bgr.Blue, (int)bgr.Green, (int)bgr.Red);
+                //try
+                //{
+                //    debug.Save("colordebug/" + total + ".png");
+                //}
+                //catch (Exception)
+                //{
+                //    try
+                //    {
+                //        debug.Save("colordebug/" + total + ".jpg");
+                //    }
+                //    catch (Exception)
+                //    {
+                //    }
+                //}
             }
-            #endregion
+            #endregion 
+#endif
             return verdict;
         }
         #endregion
 
-        public static Point FindBestColoredPixel(Image<Bgr, Byte> image)
+        public static Point FindBestColoredPixel(Image<Bgr, Byte> image, out Image<Bgr, Byte> debug)
         {
             Image<Hsv, Byte> hsvImage = image.Convert<Hsv, Byte>();
 
@@ -847,7 +865,7 @@ namespace SetVision.Vision
 
             #region debug
             Bgr col = image[max];
-            Image<Bgr, Byte> debug = image.Clone();
+            debug = image.Clone(); //Image<Bgr, Byte> 
             debug.Draw(new CircleF(new PointF(max.X, max.Y), 5), new Bgr(255, 255, 255), 1);
             debug.Draw(new CircleF(new PointF(max.X, max.Y), 6), col, 2);
             debug.Draw(new CircleF(new PointF(max.X, max.Y), 8), new Bgr(255, 255, 255), 1);
@@ -942,6 +960,7 @@ namespace SetVision.Vision
         private static Fill DetermineFill2(ContourNode cardNode)
         {
             Fill fill = Fill.Other;
+
             ContourNode outer = cardNode.Children[0];
             try
             {

@@ -49,6 +49,8 @@ namespace ColorClassifier
         {
             BgrHsvClassifier classifier = new BgrHsvClassifier();
             classifier.Train();
+
+            BgrClassifier.Test();
         }
     }
 }

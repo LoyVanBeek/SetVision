@@ -111,28 +111,31 @@ namespace SetVision
         {
             OpenFileDialog dlg = new OpenFileDialog();
 
-            DialogResult result = dlg.ShowDialog();
-            string filename = dlg.FileName;
-            FileInfo info = new FileInfo(filename);
-            if (!info.Exists)
+            System.Windows.Forms.DialogResult result = dlg.ShowDialog();
+            if (result == System.Windows.Forms.DialogResult.OK)
             {
-                RunButton.IsEnabled = false;
-            }
-            else
-            {
-                RunButton.IsEnabled = true;
-                PathBox.Text = info.FullName;
+                string filename = dlg.FileName;
+                FileInfo info = new FileInfo(filename);
+                if (!info.Exists)
+                {
+                    RunButton.IsEnabled = false;
+                }
+                else
+                {
+                    RunButton.IsEnabled = true;
+                    PathBox.Text = info.FullName;
 
-                try
-                {
-                    Image<Bgr, Byte> table = new Image<Bgr, byte>(info.FullName);
-                    ImageSource bitmap = TreeViz.ToBitmapSource(table.PyrDown().PyrDown());
-                    Shower.Source = bitmap;
-                }
-                catch (Exception ex)
-                {
-                    throw ex;
-                }
+                    try
+                    {
+                        Image<Bgr, Byte> table = new Image<Bgr, byte>(info.FullName);
+                        ImageSource bitmap = TreeViz.ToBitmapSource(table.PyrDown().PyrDown());
+                        Shower.Source = bitmap;
+                    }
+                    catch (Exception ex)
+                    {
+                        throw ex;
+                    }
+                } 
             }
         }
     }
