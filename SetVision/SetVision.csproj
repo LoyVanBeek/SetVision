@@ -114,10 +114,11 @@
     <Compile Include="Gamelogic\Combinatorics\ListExtensions.cs" />
     <Compile Include="Gamelogic\Logic.cs" />
     <Compile Include="Learning\BgrClassifier.cs" />
+    <Compile Include="Learning\Classifier.cs" />
     <Compile Include="Learning\ClassifierUtils.cs" />
     <Compile Include="Learning\CsvWriter.cs" />
     <Compile Include="Learning\HsvClassifier.cs" />
-    <Compile Include="Learning\KmeansClassifier.cs" />
+    <Compile Include="Learning\KNearestClassifier.cs" />
     <Compile Include="Learning\IClassifier.cs" />
     <Compile Include="ParametrizeSurf.xaml.cs">
       <DependentUpon>ParametrizeSurf.xaml</DependentUpon>

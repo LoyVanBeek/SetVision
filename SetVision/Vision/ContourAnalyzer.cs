@@ -72,7 +72,7 @@ namespace SetVision.Vision
             //ImageViewer.Show(debug2);
 
             AssignColors(tree, table);
-            //TreeViz.VizualizeTree(tree);
+            TreeViz.VizualizeTree(tree);
             AssignFills(tree);
 
             Dictionary<Card, Point> cardlocs = new Dictionary<Card, Point>();
@@ -635,6 +635,38 @@ namespace SetVision.Vision
                 return CardColor.Other;
             }
         }
+
+        private static CardColor ClassifyBgr2(Bgr col)
+        {
+            bool red1 = col.Red > 130;
+            bool green1 = col.Red < 130;
+            bool purple1 = col.Red < 130;
+
+            bool red2 = col.Red > col.Blue && col.Red > col.Green;
+            bool green2 = (col.Green > col.Blue && col.Green > col.Red);
+            bool purple2 = (col.Blue > col.Green && col.Red > col.Green);
+
+            //bool red3 = col.Red > col.Blue && col.Red > col.Green;
+            //bool green3 = (col.Green > col.Blue && col.Green > col.Red);
+            //bool purple3 = (col.Blue > col.Green && col.Red > col.Green);
+
+            if (red1 && red2)
+            {
+                return CardColor.Red;
+            }
+            else if (purple1 && purple2)
+            {
+                return CardColor.Purple;
+            }
+            else if (green1 && green2)
+            {
+                return CardColor.Green;
+            }
+            else
+            {
+                return CardColor.Other;
+            }
+        }
         #endregion
 
         #region new method
@@ -790,11 +822,11 @@ namespace SetVision.Vision
 
             //DOES NOT WORK for some reason
             //CardColor colorHsv2 = hsvClassifier.Classify(hsv);
-            CardColor colorBgr2 = bgrClassifier.Classify(bgr);
+            //CardColor colorBgr2 = bgrClassifier.Classify(bgr);
             //bgrClassifier.Classify(bgr);
 
             //Trying something out
-            CardColor colorBgr3 = ClassifyBgr(bgr);
+            CardColor colorBgr3 = ClassifyBgr2(bgr);
             CardColor colorHsv3 = ClassifyHsv(hsv); ; //part of tryout
             
             CardColor verdict = colorBgr1;

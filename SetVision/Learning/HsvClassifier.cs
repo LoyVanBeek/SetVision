@@ -10,11 +10,11 @@ namespace SetVision.Learning
 {
     public class HsvClassifier
     {
-        KmeansClassifier kmeans;
+        KNearestClassifier kmeans;
 
         public HsvClassifier()
         {
-            kmeans = new KmeansClassifier();
+            kmeans = new KNearestClassifier();
 
             Dictionary<float[], int> data = new Dictionary<float[], int>();
             foreach (KeyValuePair<float[], int> item in GenerateTrainPairs())

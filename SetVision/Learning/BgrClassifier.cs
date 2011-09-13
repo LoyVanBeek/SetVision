@@ -25,11 +25,11 @@ namespace SetVision.Learning
             Purple
         }
 
-        KmeansClassifier kmeans;
+        KNearestClassifier kmeans;
 
         public BgrClassifier()
         {
-            kmeans = new KmeansClassifier();
+            kmeans = new KNearestClassifier();
 
             Dictionary<float[], string> data = new Dictionary<float[], string>();
             //foreach (KeyValuePair<float[], string> item in TrainDirectories_String())
@@ -154,7 +154,7 @@ namespace SetVision.Learning
 
         private IEnumerable<KeyValuePair<float[], string>> TrainCsv()
         {
-            StreamReader reader = new StreamReader(@"D:\Development\OpenCV\SetVision\training_step50.csv");
+            StreamReader reader = new StreamReader(@"D:\Development\OpenCV\SetVision\recordings.csv");
             string line = reader.ReadLine();
             do
             {
