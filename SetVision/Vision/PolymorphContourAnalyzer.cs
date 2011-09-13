@@ -14,7 +14,7 @@ namespace SetVision.Vision
     {
         #region ICardDetector Members
 
-        public Dictionary<Card, Point> LocateCards(Image<Bgr, Byte> table)
+        public Dictionary<Card, Point> LocateCards(Image<Bgr, Byte> table, Settings settings)
         {
             #region process image
             //Convert the image to grayscale and filter out the noise

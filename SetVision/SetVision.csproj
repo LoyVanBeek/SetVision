@@ -110,6 +110,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Exceptions\VisionException.cs" />
     <Compile Include="Gamelogic\Card.cs" />
     <Compile Include="Gamelogic\Combinatorics\ListExtensions.cs" />
     <Compile Include="Gamelogic\Logic.cs" />
@@ -149,6 +150,7 @@
     <Compile Include="Exceptions\InvalidCardException.cs" />
     <Compile Include="Vision\PolymorphContourAnalyzer.cs" />
     <Compile Include="Exceptions\SetGameException.cs" />
+    <Compile Include="Vision\Settings.cs" />
     <Compile Include="Vision\ShapeContour.cs" />
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
@@ -202,6 +204,8 @@
     <Content Include="images\scene4.jpg">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Resource Include="images\scene5e.jpg" />
+    <Resource Include="images\scene6b.jpg" />
     <Content Include="images\shapes.jpg">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

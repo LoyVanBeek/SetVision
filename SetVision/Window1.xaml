@@ -9,8 +9,13 @@
             <RowDefinition/>
             <RowDefinition Height="640"/>
         </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition/>
+            <ColumnDefinition Width="100"/>
+        </Grid.ColumnDefinitions>
         <Grid HorizontalAlignment="Stretch"
-              Grid.Row="0">
+              Grid.Row="0"
+              Grid.ColumnSpan="2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition/>
                 <ColumnDefinition Width="100"/>
@@ -29,7 +34,19 @@
         </Grid>
         <Button x:Name="RunButton"
             Click="Button_Click" Content="Find sets" IsEnabled="True"
-            Grid.Row="1"/>
-        <Image x:Name="Shower" Grid.Row="2"/>
+            Grid.Row="1"
+            Grid.Column="0"/>
+        <ComboBox x:Name="cmbDebuglevel"
+                  Grid.Row="1"
+                  Grid.Column="1">
+            <ComboBoxItem>1: light</ComboBoxItem>
+            <ComboBoxItem>2: medium</ComboBoxItem>
+            <ComboBoxItem>3: heavy</ComboBoxItem>
+            <ComboBoxItem>4: verbose</ComboBoxItem>
+            <ComboBoxItem>5: ultra</ComboBoxItem>
+        </ComboBox>
+        <Image x:Name="Shower" 
+               Grid.Row="2"
+            Grid.ColumnSpan="2"/>
     </Grid>
 </Window>

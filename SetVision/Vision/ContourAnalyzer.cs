@@ -7,6 +7,7 @@ using Emgu.CV.Structure;
 using Emgu.CV.UI;
 using SetVision.Gamelogic;
 using SetVision.Learning;
+using SetVision.Exceptions;
 
 namespace SetVision.Vision
 {
@@ -30,7 +31,7 @@ namespace SetVision.Vision
         /// </summary>
         /// <param name="table">An image displaying the table with the Set cards</param>
         /// <returns>A dict locating which cards are present where in the image</returns>
-        public Dictionary<Card, Point> LocateCards(Image<Bgr, Byte> table)
+        public Dictionary<Card, Point> LocateCards(Image<Bgr, Byte> table, Settings settings)
         {
             classifier = new BgrHsvClassifier();
             classifier.Train();
@@ -47,9 +48,17 @@ namespace SetVision.Vision
             Gray circleAccumulatorThreshold = new Gray(120);
 
             Image<Gray, Byte> cannyEdges = gray.Canny(cannyThreshold, cannyThresholdLinking);
+            if (settings.debuglevel >= 3)
+            {
+                ImageViewer.Show(cannyEdges, "cannyEdges before Closing");
+            }
 
             StructuringElementEx el = new StructuringElementEx(3, 3, 1, 1, CV_ELEMENT_SHAPE.CV_SHAPE_RECT);
             cannyEdges = cannyEdges.MorphologyEx(el, CV_MORPH_OP.CV_MOP_CLOSE, 1);
+            if (settings.debuglevel >= 3)
+            {
+                ImageViewer.Show(cannyEdges, "cannyEdges after Closing");
+            }
             #endregion
 
             Contour<Point> contours = cannyEdges.FindContours(
@@ -60,19 +69,29 @@ namespace SetVision.Vision
 
             AssignShapes(tree);
             AssignImages(tree, table, true);
-
-            //var debug1 = table.Clone();
-            //DrawContours(tree, debug1);
-            //ImageViewer.Show(debug1);
+            if (settings.debuglevel >= 3)
+            {
+                var debug1 = table.Clone();
+                DrawContours(tree, debug1);
+                ImageViewer.Show(debug1);
+            }
 
             FilterTree(tree);
 
-            //var debug2 = table.Clone();
-            //DrawContours(tree, debug2);
-            //ImageViewer.Show(debug2);
+            if (settings.debuglevel >= 3)
+            {
+                var debug2 = table.Clone();
+                DrawContours(tree, debug2);
+                ImageViewer.Show(debug2);
+            }
 
-            AssignColors(tree, table);
-            TreeViz.VizualizeTree(tree);
+            AssignColors(tree, table, settings);
+            
+            if (settings.debuglevel >= 3)
+            {
+                TreeViz.VizualizeTree(tree);
+            }
+            
             AssignFills(tree);
 
             Dictionary<Card, Point> cardlocs = new Dictionary<Card, Point>();
@@ -88,11 +107,15 @@ namespace SetVision.Vision
             }
 
             #region draw and debug
-#if DEBUG
-            //DrawContours(tree, table);
-            TreeViz.VizualizeTree(tree);
-            //ImageViewer.Show(table);
-#endif
+            if (settings.debuglevel >= 1)
+            {
+                TreeViz.VizualizeTree(tree);
+            }
+            if (settings.debuglevel >= 2)
+            {
+                DrawContours(tree, table);
+                ImageViewer.Show(table);
+            }
             #endregion
             return cardlocs;
         }
@@ -377,16 +400,16 @@ namespace SetVision.Vision
         #endregion
 
         #region color
-        private static void AssignColors(ContourNode tree, Image<Bgr, Byte> image)
+        private static void AssignColors(ContourNode tree, Image<Bgr, Byte> image, Settings settings)
         {
-            AssignColor(tree, image);
+            AssignColor(tree, image, settings);
             foreach (ContourNode child in tree.Children)
             {
-                AssignColor(child, image);
-                AssignColors(child, image);
+                AssignColor(child, image, settings);
+                AssignColors(child, image, settings);
             }
         }
-        private static void AssignColor(ContourNode node, Image<Bgr, Byte> image)
+        private static void AssignColor(ContourNode node, Image<Bgr, Byte> image, Settings settings)
         {
             if (node.Contour.Area > 100
                 && ((node.Shape == Shape.Squiggle)
@@ -395,19 +418,19 @@ namespace SetVision.Vision
             {
                 //CardColor color = RecognizeColor(image, node);
                 //CardColor color = RecognizeColor(node);
-                CardColor color = RecognizeColor2(node);
+                CardColor color = RecognizeColor2(node, settings);
                 node.Color = color;
 
-                AssignAverageColors(node);
+                AssignAverageColors(node, settings);
             }
             else if (node.Shape == Shape.Card)
             {
-                AssignAverageColors(node);
+                AssignAverageColors(node, settings);
             }
 
         }
 
-        private static void AssignAverageColors(ContourNode node)
+        private static void AssignAverageColors(ContourNode node, Settings settings)
         {
             //Then get the average color of the card (should be white or gray)
             Bgr avgBgr = new Bgr();
@@ -794,7 +817,7 @@ namespace SetVision.Vision
         #endregion
 
         #region decide on best colored pixel
-        private static CardColor RecognizeColor2(ContourNode node)
+        private static CardColor RecognizeColor2(ContourNode node, Settings settings)
         {
             //First, flatten the images of all children to 1 image which we can analyze
             Image<Bgr, Byte> image = node.Image;//Flatten(node);
@@ -873,6 +896,10 @@ namespace SetVision.Vision
             }
             #endregion 
 #endif
+            if (settings.debuglevel >= 4)
+            {
+                ImageViewer.Show(debugBest, verdict.ToString());
+            }
             return verdict;
         }
         #endregion
@@ -993,35 +1020,42 @@ namespace SetVision.Vision
         {
             Fill fill = Fill.Other;
 
-            ContourNode outer = cardNode.Children[0];
             try
             {
-                ContourNode inner = outer.Children[0];
-
-                double bgrDist = ColorDistance(cardNode.averageBgr, inner.averageBgr);
-                double hsvDist = ColorDistance(cardNode.averageHsv, inner.averageHsv);
-
-
-                if (hsvDist < 20)
+                ContourNode outer = cardNode.Children[0];
+                try
                 {
-                    fill = Fill.Open;
+                    ContourNode inner = outer.Children[0];
+
+                    double bgrDist = ColorDistance(cardNode.averageBgr, inner.averageBgr);
+                    double hsvDist = ColorDistance(cardNode.averageHsv, inner.averageHsv);
+
+
+                    if (hsvDist < 20)
+                    {
+                        fill = Fill.Open;
+                    }
+                    else if (hsvDist > 100)
+                    {
+                        fill = Fill.Solid;
+                    }
+                    else if (isDashed(inner))
+                    {
+                        fill = Fill.Dashed;
+                    }
+
+                    outer.Fill = fill;
+                    inner.Fill = fill;
                 }
-                else if (hsvDist > 100)
+                catch (ArgumentOutOfRangeException)
                 {
+                    //The inner-node has nu children, which indicates a solid node, as being solid doesnt make edges
                     fill = Fill.Solid;
                 }
-                else if (isDashed(inner))
-                {
-                    fill = Fill.Dashed;
-                }
-
-                outer.Fill = fill;
-                inner.Fill = fill;
             }
-            catch (ArgumentOutOfRangeException)
+            catch (ArgumentOutOfRangeException e)
             {
-                //The inner-node has nu children, which indicates a solid node, as being solid doesnt make edges
-                fill = Fill.Solid;
+                throw new VisionException("Could not distinguish shape from card", e, cardNode.Image);
             }
             return fill;
         }

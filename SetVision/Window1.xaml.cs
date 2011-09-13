@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.Windows.Forms;
 using System.IO;
 using System.Windows.Media;
+using SetVision.Exceptions;
 
 namespace SetVision
 {
@@ -33,12 +34,12 @@ namespace SetVision
 
             ContourAnalyzer ca = new ContourAnalyzer();
             Image<Bgr, Byte> table = new Image<Bgr, byte>(filename);
-            table = table.PyrDown().PyrDown();//.PyrDown().PyrUp();
+            table = table.PyrDown().PyrDown();
 
-            //ImageSource bitmap = TreeViz.ToBitmapSource(table);
-            //Shower.Source = bitmap;
+            int debuglevel = cmbDebuglevel.SelectedIndex+1; //The first item has index 0, but level 1
 
-            Dictionary<Card, System.Drawing.Point> cards = ca.LocateCards(table);
+            Settings settings = new Settings(debuglevel);
+            Dictionary<Card, System.Drawing.Point> cards = ca.LocateCards(table, settings);
 
             Logic logic = new Logic();
             HashSet<List<Card>> sets = logic.FindSets(new List<Card>(cards.Keys));
@@ -51,10 +52,6 @@ namespace SetVision
 
             watch.Stop();
             this.Title = String.Format("Done. Elapsed time: {0}", watch.Elapsed.ToString());
-
-            //shower.Show();
-            //shower.FunctionalMode = ImageBox.FunctionalModeOption.PanAndZoom;
-            //shower.Image = table;
 
             ImageSource bitmap = TreeViz.ToBitmapSource(table);
             Shower.Source = bitmap;
@@ -100,11 +97,17 @@ namespace SetVision
                 if (ice != null)
                 {
                     System.Windows.MessageBox.Show(
-                        "Tried to create a card with an invalid property: "+ice.Property+"="+ice.Value, 
+                        "Tried to create a card with an invalid property: " + ice.Property + "=" + ice.Value,
                         "Invalid card detected"
                         );
                 }
-            } 
+            }
+            catch (VisionException ve)
+            {
+                //System.Windows.MessageBox.Show("Something went wrong while analizing the image."+ 
+                //"Are the cards separated, are the shapes not blurry and isn't the image underlit?");
+                ImageViewer.Show(ve.Image, ve.Message+"Are the cards separated, are the shapes not blurry and isn't the image underlit?");
+            }
         }
 
         private void Browse_Click(object sender, RoutedEventArgs e)

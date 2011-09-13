@@ -11,6 +11,6 @@ namespace SetVision.Vision
 {
     public interface ICardDetector
     {
-        Dictionary<Card, Point> LocateCards(Image<Bgr, Byte> table);
+        Dictionary<Card, Point> LocateCards(Image<Bgr, Byte> table, Settings settings);
     }
 }
