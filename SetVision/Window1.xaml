@@ -38,12 +38,14 @@
             Grid.Column="0"/>
         <ComboBox x:Name="cmbDebuglevel"
                   Grid.Row="1"
-                  Grid.Column="1">
-            <ComboBoxItem>1: light</ComboBoxItem>
-            <ComboBoxItem>2: medium</ComboBoxItem>
-            <ComboBoxItem>3: heavy</ComboBoxItem>
-            <ComboBoxItem>4: verbose</ComboBoxItem>
-            <ComboBoxItem>5: ultra</ComboBoxItem>
+                  Grid.Column="1"
+                  SelectedIndex="0">
+            <ComboBoxItem>0: No debug</ComboBoxItem>
+            <ComboBoxItem>1: Light</ComboBoxItem>
+            <ComboBoxItem>2: Medium</ComboBoxItem>
+            <ComboBoxItem>3: Heavy</ComboBoxItem>
+            <ComboBoxItem>4: Verbose</ComboBoxItem>
+            <ComboBoxItem>5: Ultra</ComboBoxItem>
         </ComboBox>
         <Image x:Name="Shower" 
                Grid.Row="2"

@@ -43,16 +43,29 @@ namespace SetVision.Vision
             //Convert the image to grayscale and filter out the noise
             Image<Gray, Byte> gray = table.Convert<Gray, Byte>();
 
-            Gray cannyThreshold = new Gray(180);
-            Gray cannyThresholdLinking = new Gray(120);
-            Gray circleAccumulatorThreshold = new Gray(120);
-
-            Image<Gray, Byte> cannyEdges = gray.Canny(cannyThreshold, cannyThresholdLinking);
+            
+            Gray cannyThreshold = new Gray(50); //180
+            Gray cannyThresholdLinking = new Gray(30); //120
+            Gray circleAccumulatorThreshold = new Gray(100); //120
+            #region old
+		            Image<Gray, Byte> cannyEdges = gray.Canny(cannyThreshold, cannyThresholdLinking);
             if (settings.debuglevel >= 3)
             {
                 ImageViewer.Show(cannyEdges, "cannyEdges before Closing");
-            }
+            } 
+	        #endregion
+            //#region new
+            //Image<Gray, Byte> thresholded = new Image<Gray, byte>(gray.Size);
+            //CvInvoke.cvAdaptiveThreshold(gray.Ptr, thresholded.Ptr,
+            //    255,
+            //    ADAPTIVE_THRESHOLD_TYPE.CV_ADAPTIVE_THRESH_GAUSSIAN_C,
+            //    THRESH.CV_THRESH_BINARY_INV, 9, 5);
+            //StructuringElementEx el1 = new StructuringElementEx(3, 3, 1, 1, CV_ELEMENT_SHAPE.CV_SHAPE_RECT);
+            //thresholded = thresholded.Erode(1);//thresholded.MorphologyEx(el1, CV_MORPH_OP.CV_MOP_CLOSE, 1);//
+            //Image<Gray, Byte> cannyEdges = thresholded;//.Canny(new Gray(1), new Gray(10)); 
+            //#endregion
 
+            //StructuringElementEx el = new StructuringElementEx(5, 5, 2, 2, CV_ELEMENT_SHAPE.CV_SHAPE_RECT);
             StructuringElementEx el = new StructuringElementEx(3, 3, 1, 1, CV_ELEMENT_SHAPE.CV_SHAPE_RECT);
             cannyEdges = cannyEdges.MorphologyEx(el, CV_MORPH_OP.CV_MOP_CLOSE, 1);
             if (settings.debuglevel >= 3)
@@ -837,10 +850,11 @@ namespace SetVision.Vision
             bgr = image[bestpos];
             hsv = hsvFlat[bestpos];
 
+            #region classification
             //KINDA WORKS, when used with the Pass 4 training folder, makes some mistakes. 
             //Makes no yet detected mistakes with (more extensive) Pass 9 folder
-            CardColor colorHsv1 = classifier.Classify(hsv); 
-            CardColor colorBgr1 = classifier.Classify(bgr); 
+            CardColor colorHsv1 = classifier.Classify(hsv);
+            CardColor colorBgr1 = classifier.Classify(bgr);
             //CardColor test = classifier.Classify(bgr); 
 
             //DOES NOT WORK for some reason
@@ -850,7 +864,8 @@ namespace SetVision.Vision
 
             //Trying something out
             CardColor colorBgr3 = ClassifyBgr2(bgr);
-            CardColor colorHsv3 = ClassifyHsv(hsv); ; //part of tryout
+            CardColor colorHsv3 = ClassifyHsv(hsv); ; //part of tryout 
+            #endregion
             
             CardColor verdict = colorBgr1;
             if (verdict == CardColor.Other)
@@ -900,12 +915,17 @@ namespace SetVision.Vision
             {
                 ImageViewer.Show(debugBest, verdict.ToString());
             }
+            else if (settings.debuglevel >= 2 && verdict==CardColor.Other)
+            {
+                ImageViewer.Show(debugBest, verdict.ToString());
+            }
             return verdict;
         }
         #endregion
 
         public static Point FindBestColoredPixel(Image<Bgr, Byte> image, out Image<Bgr, Byte> debug)
         {
+            //Find the pixel where the color is the least value (high value = white) and the most saturated
             Image<Hsv, Byte> hsvImage = image.Convert<Hsv, Byte>();
 
             double[] mins, maxs;
@@ -916,7 +936,7 @@ namespace SetVision.Vision
             Image<Gray, Byte> vChannel = channels[2];
 
             vChannel._Not();
-            Image<Gray, Byte> use = vChannel.Mul(sChannel, 0.01);
+            Image<Gray, Byte> use = vChannel.Mul(sChannel, 0.015);
 
             use.MinMax(out mins, out maxs, out minlocs, out maxlocs);
 

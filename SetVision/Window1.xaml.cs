@@ -36,7 +36,7 @@ namespace SetVision
             Image<Bgr, Byte> table = new Image<Bgr, byte>(filename);
             table = table.PyrDown().PyrDown();
 
-            int debuglevel = cmbDebuglevel.SelectedIndex+1; //The first item has index 0, but level 1
+            int debuglevel = cmbDebuglevel.SelectedIndex;
 
             Settings settings = new Settings(debuglevel);
             Dictionary<Card, System.Drawing.Point> cards = ca.LocateCards(table, settings);
