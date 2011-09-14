@@ -80,6 +80,14 @@ namespace SetVision.Vision
 
             ContourNode tree = new ContourNode(contours);
 
+            FilterTree(tree);
+            if (settings.debuglevel >= 3)
+            {
+                var debug = table.Clone();
+                DrawContours(tree, debug);
+                ImageViewer.Show(debug, "Contours after filtering");
+            }
+
             AssignShapes(tree);
             AssignImages(tree, table, true);
             if (settings.debuglevel >= 3)
