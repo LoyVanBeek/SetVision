@@ -121,6 +121,7 @@
     <Compile Include="Learning\HsvClassifier.cs" />
     <Compile Include="Learning\KNearestClassifier.cs" />
     <Compile Include="Learning\IClassifier.cs" />
+    <Compile Include="Learning\SVMClassifier.cs" />
     <Compile Include="ParametrizeSurf.xaml.cs">
       <DependentUpon>ParametrizeSurf.xaml</DependentUpon>
     </Compile>

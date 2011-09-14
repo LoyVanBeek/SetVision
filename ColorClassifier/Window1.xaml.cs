@@ -51,6 +51,14 @@ namespace ColorClassifier
             classifier.Train();
 
             BgrClassifier.Test();
+
+            SVMClassifier svm = new SVMClassifier();
+            svm.TrainFromCsv(@"D:\Development\OpenCV\SetVision\recordings.csv");
+            string col1 = svm.ClassifyToString(new float[] { 0, 0, 255 }); //red
+            string col2 = svm.ClassifyToString(new float[] { 110, 45, 89 }); //purple
+            string col3 = svm.ClassifyToString(new float[] { 99, 20, 120 }); //purple
+            string col4 = svm.ClassifyToString(new float[] { 71, 100, 54 }); //green
+            svm.Save(@"D:\Development\OpenCV\SetVision\rgbsvm.yaml");
         }
     }
 }

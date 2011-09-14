@@ -3,17 +3,18 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Emgu.CV;
+using System.IO;
 
 namespace SetVision.Learning
 {
-    internal abstract class Classifier
+    public abstract class Classifier
     {
-        Dictionary<int, string> LUT;
-        Dictionary<string, int> TUL; //inverse of Lookup table
+        protected Dictionary<int, string> LUT;
+        protected Dictionary<string, int> TUL; //inverse of Lookup table
 
         public static void GenerateTrainMatrices(IDictionary<float[], int> trainpairs,
-    out Matrix<float> vectors,
-    out Matrix<float> classes)
+            out Matrix<float> vectors,
+            out Matrix<float> classes)
         {
             List<float[]> samples = new List<float[]>(trainpairs.Keys);
 
@@ -43,19 +44,89 @@ namespace SetVision.Learning
             return toClassify;
         }
 
-        int Classify(float[] vector)
+        public virtual int Classify(float[] vector)
         {
             throw new NotImplementedException();
         }
 
-        void Train(IDictionary<float[], int> trainpairs)
+        public string ClassifyToString(float[] vector)
+        {
+            int key = this.Classify(vector);
+            return this.LUT[key];
+        }
+
+        public virtual void Train(IDictionary<float[], int> trainpairs)
         {
             throw new NotImplementedException();
         }
 
-        void Train(IDictionary<float[], string> trainpairs)
+        public virtual void Train(IDictionary<float[], string> trainpairs)
         {
             throw new NotImplementedException();
+        }
+
+        protected void InitLookups(IDictionary<float[], string> trainpairs)
+        {
+            LUT = new Dictionary<int, string>(trainpairs.Count); //LookUp Table
+            TUL = new Dictionary<string, int>(trainpairs.Count); //reverse LookUp Table
+
+            HashSet<string> strings = new HashSet<string>(trainpairs.Values);
+            string[] keys = strings.ToArray();
+            for (int i = 0; i < keys.Length; i++)
+            {
+                this.LUT.Add(i, keys[i]);
+                try
+                {
+                    this.TUL.Add(keys[i], i);
+                }
+                catch (ArgumentException) { }
+            }
+        }
+
+        protected IEnumerable<KeyValuePair<float[], string>> TrainCsv(string filename)
+        {
+            StreamReader reader = new StreamReader(filename);
+            string line = reader.ReadLine();
+            do
+            {
+                line = reader.ReadLine();
+                if (!String.IsNullOrEmpty(line.Replace(';', ' ')))
+                {
+                    //string[] parts = line.Split(';');
+                    List<string> parts = new List<string>(line.Split(';'));
+                    List<float> fields = new List<float>(parts.Count-1); //last field is string
+                    string label = "";
+                    foreach (string part in parts)
+                    {
+                        if (!String.IsNullOrEmpty(part))
+                        {
+                            try
+                            {
+                                float flt = float.Parse(part);
+                                fields.Add(flt);
+                            }
+                            catch (FormatException)
+                            {
+                                label = part;
+                                break;
+                            } 
+                        }
+                    }
+
+                    yield return new KeyValuePair<float[], string>(fields.ToArray(), label);
+                }
+            }
+            while (reader.Peek() != -1);
+        }
+
+        public void TrainFromCsv(string filename)
+        {
+            Dictionary<float[], string> data = new Dictionary<float[], string>();
+            foreach (KeyValuePair<float[], string> item in TrainCsv(filename))
+            {
+                data.Add(item.Key, item.Value);
+            }
+            this.Train(data);
         }
     }
 }
