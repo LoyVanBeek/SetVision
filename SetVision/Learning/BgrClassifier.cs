@@ -32,10 +32,6 @@ namespace SetVision.Learning
             kmeans = new KNearestClassifier();
 
             Dictionary<float[], string> data = new Dictionary<float[], string>();
-            //foreach (KeyValuePair<float[], string> item in TrainDirectories_String())
-            //{
-            //    data.Add(item.Key, item.Value);
-            //}
             foreach (KeyValuePair<float[], string> item in TrainCsv())
             {
                 data.Add(item.Key, item.Value);

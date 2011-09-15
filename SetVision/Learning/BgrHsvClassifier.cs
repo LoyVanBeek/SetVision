@@ -29,6 +29,8 @@ namespace SetVision.Learning
 
         private IEnumerable<KeyValuePair<ColorPair, CardColor>> GenerateTrainPairs()
         {
+            CsvWriter writer = new CsvWriter(@"D:\Development\OpenCV\SetVision\SetVision\bin\Debug\colordebug\generated.csv");
+
             DirectoryInfo colordebug = new DirectoryInfo(@"D:\Development\OpenCV\SetVision\SetVision\bin\Debug\colordebug");
             DirectoryInfo traindir = colordebug.GetDirectories("Pass 9")[0];
 
@@ -60,10 +62,13 @@ namespace SetVision.Learning
                     if (!bgr.Equals(new Bgr()) && !hsv.Equals(new Hsv()))
                     {
                         ColorPair colors = new ColorPair(bgr, hsv);
+                        writer.Write((int)bgr.Blue, (int)bgr.Green, (int)bgr.Red);
+
                         yield return new KeyValuePair<ColorPair, CardColor>(colors, color);
                     }
                 }
             }
+            writer.Close();
         }
 
         private void fileNameToColors(string filename, out Bgr bgr, out Hsv hsv)

@@ -16,9 +16,6 @@ namespace SetVision.Vision
     {
         static BgrHsvClassifier classifier;
 
-        static BgrClassifier bgrClassifier;
-        static HsvClassifier hsvClassifier;
-
         static CsvWriter writer = new CsvWriter(@"D:\Development\OpenCV\SetVision\SetVision\bin\Debug\colordebug\record.csv");
 
         /// <summary>
@@ -36,9 +33,6 @@ namespace SetVision.Vision
         {
             classifier = new BgrHsvClassifier();
             classifier.Train();
-
-            bgrClassifier = new BgrClassifier();
-            hsvClassifier = new HsvClassifier();
 
             #region process image
             //Convert the image to grayscale and filter out the noise
@@ -82,37 +76,45 @@ namespace SetVision.Vision
             ContourNode tree = new ContourNode(contours);
 
             FilterTree(tree);
+            #region debug
             if (settings.debuglevel >= 3)
             {
                 var debug = table.Clone();
                 DrawContours(tree, debug);
                 ImageViewer.Show(debug, "Contours after filtering");
-            }
+            } 
+            #endregion
 
             AssignShapes(tree);
             AssignImages(tree, table, true);
+            #region debug
             if (settings.debuglevel >= 3)
             {
                 var debug1 = table.Clone();
                 DrawContours(tree, debug1);
                 ImageViewer.Show(debug1);
-            }
+            } 
+            #endregion
 
             FilterTree(tree);
 
+            #region debug
             if (settings.debuglevel >= 3)
             {
                 var debug2 = table.Clone();
                 DrawContours(tree, debug2);
                 ImageViewer.Show(debug2);
-            }
+            } 
+            #endregion
 
             AssignColors(tree, table, settings);
-            
+
+            #region debug
             if (settings.debuglevel >= 3)
             {
                 TreeViz.VizualizeTree(tree);
-            }
+            } 
+            #endregion
             
             AssignFills(tree);
 
@@ -128,7 +130,7 @@ namespace SetVision.Vision
                 cardlocs.Add(card, center);
             }
 
-            #region draw and debug
+            #region debug
             if (settings.debuglevel >= 1)
             {
                 TreeViz.VizualizeTree(tree);
@@ -430,7 +432,7 @@ namespace SetVision.Vision
             {
                 //CardColor color = RecognizeColor(image, node);
                 //CardColor color = RecognizeColor(node);
-                CardColor color = RecognizeColor2(node, settings);
+                CardColor color = RecognizeColor(node, settings);
                 node.Color = color;
 
                 AssignAverageColors(node, settings);
@@ -581,100 +583,67 @@ namespace SetVision.Vision
                 }
             }
         }
+        
+        /// <summary>
+        /// Check if R, G and B are closer than range together
+        /// </summary>
+        /// <param name="col">the color to classify as gray on not</param>
+        /// <param name="range">The max difference between channels to still classifiy as gray</param>
+        /// <returns></returns>
+        private static bool isGray(Bgr col, double range)
+        {
+            double bg = Math.Abs(col.Blue - col.Green);
+            double gr = Math.Abs(col.Green - col.Red);
+            double rb = Math.Abs(col.Red - col.Blue);
+
+            bool bgOK = (bg <= range);
+            bool grOK = (gr <= range);
+            bool rbOK = (rb <= range);
+
+            return bgOK && grOK && rbOK;
+        }
         #endregion
 
         #region decide on best colored pixel
-        private static CardColor RecognizeColor2(ContourNode node, Settings settings)
+        private static CardColor RecognizeColor(ContourNode node, Settings settings)
         {
-            //First, flatten the images of all children to 1 image which we can analyze
-            Image<Bgr, Byte> image = node.Image;//Flatten(node);
+            Image<Bgr, Byte> image = node.Image;
             image.ROI = node.Contour.BoundingRectangle;
-
-            #region get average
-            Bgr bgr; MCvScalar scalar;
-            image.AvgSdv(out bgr, out scalar);
-
-            Image<Hsv, Byte> hsvFlat = image.Convert<Hsv, Byte>();
-            Hsv hsv; MCvScalar scalar2;
-            hsvFlat.AvgSdv(out hsv, out scalar2);
-            #endregion
 
             Image<Bgr, Byte> debugBest = null;
             Point bestpos = FindBestColoredPixel(image, out debugBest);
-            bgr = image[bestpos];
-            hsv = hsvFlat[bestpos];
+            Bgr bgr = image[bestpos];
 
             #region classification
-            //KINDA WORKS, when used with the Pass 4 training folder, makes some mistakes. 
-            //Makes no yet detected mistakes with (more extensive) Pass 9 folder
-            CardColor colorHsv1 = classifier.Classify(hsv);
-            CardColor colorBgr1 = classifier.Classify(bgr);
-            //CardColor test = classifier.Classify(bgr); 
-
-            //DOES NOT WORK for some reason
-            //CardColor colorHsv2 = hsvClassifier.Classify(hsv);
-            //CardColor colorBgr2 = bgrClassifier.Classify(bgr);
-            //bgrClassifier.Classify(bgr);
-
-            //Trying something out
-            CardColor colorBgr3 = ClassifyBgr2(bgr);
-            CardColor colorHsv3 = ClassifyHsv(hsv); ; //part of tryout
-
-            CardColor most = FindMostOccuringColor(image, 1, CardColor.Other);
-            #endregion
-            
-            CardColor verdict = colorBgr1;
+            CardColor classification = classifier.Classify(bgr);
+            CardColor verdict = classification;
             if (verdict == CardColor.Other)
             {
                 if (!isGray(bgr, 10))
                 {
-                    verdict = colorBgr3;
+                    verdict = ClassifyBgr2(bgr);
                 }
                 else
                 {
                     verdict = CardColor.White;
                 }
-            }
-#if DEBUG
+            } 
+            #endregion
+            #if DEBUG
+            //save for training:
+            writer.Write((int)bgr.Blue, (int)bgr.Green, (int)bgr.Red);
+            #endif
 
-            #region save for training
-            if (true)
-            {
-                Image<Bgr, Byte> debug = new Image<Bgr, byte>(500, 200);
-                debug.SetValue(bgr);
-                string BgrStr = String.Format("B{0}, G{1}, R{2}={3}", (int)bgr.Blue, (int)bgr.Green, (int)bgr.Red, colorBgr3.ToString());
-                string HsvStr = String.Format("H{0}, S{1}, V{2}={3}", (int)hsv.Hue, (int)hsv.Satuation, (int)hsv.Value, colorHsv3.ToString());
-                string total = BgrStr + " - " + HsvStr + " VERDICT=" + verdict.ToString();
-
-                MCvFont font = new MCvFont(FONT.CV_FONT_HERSHEY_PLAIN, 1, 1);
-                debug.Draw(total, ref font, new Point(20, 20), new Bgr(0, 0, 0));
-                //ImageViewer.Show(debug, total);
-                writer.Write((int)bgr.Blue, (int)bgr.Green, (int)bgr.Red);
-                //try
-                //{
-                //    debug.Save("colordebug/" + total + ".png");
-                //}
-                //catch (Exception)
-                //{
-                //    try
-                //    {
-                //        debug.Save("colordebug/" + total + ".jpg");
-                //    }
-                //    catch (Exception)
-                //    {
-                //    }
-                //}
-            }
-            #endregion 
-#endif
+            #region debug
             if (settings.debuglevel >= 4)
             {
                 ImageViewer.Show(debugBest, verdict.ToString());
             }
-            else if (settings.debuglevel >= 2 && verdict==CardColor.Other)
+            else if (settings.debuglevel >= 2 && verdict == CardColor.Other)
             {
                 ImageViewer.Show(debugBest, verdict.ToString());
-            }
+            } 
+            #endregion
             return verdict;
         }
 
@@ -737,26 +706,6 @@ namespace SetVision.Vision
             return most;
         }
         #endregion
-
-        /// <summary>
-        /// Check if R, G and B are closer than range together
-        /// </summary>
-        /// <param name="col"></param>
-        /// <param name="range"></param>
-        /// <returns></returns>
-        private static bool isGray(Bgr col, double range)
-        {
-            double bg = Math.Abs(col.Blue - col.Green);
-            double gr = Math.Abs(col.Green - col.Red);
-            double rb = Math.Abs(col.Red - col.Blue);
-
-            bool bgOK = (bg <= range);
-            bool grOK = (gr <= range);
-            bool rbOK = (rb <= range);
-
-            return bgOK && grOK && rbOK;
-        }
-
         #endregion
 
         #region fill
@@ -765,7 +714,6 @@ namespace SetVision.Vision
             AssignFill(tree);
             foreach (ContourNode child in tree.Children)
             {
-                //AssignFill(child);
                 AssignFills(child);
             }
         }
@@ -774,11 +722,11 @@ namespace SetVision.Vision
         {
             if (node.Shape == Shape.Card)
             {
-                node.Fill = DetermineFill2(node);
+                node.Fill = DetermineFill(node);
             }
         }
 
-        private static Fill DetermineFill2(ContourNode cardNode)
+        private static Fill DetermineFill(ContourNode cardNode)
         {
             Fill fill = Fill.Other;
 
@@ -826,12 +774,8 @@ namespace SetVision.Vision
         {
             Image<Bgr, Byte> im = inner.Image.Clone();
             Rectangle oldroi = inner.Image.ROI;
-            //TODO: make this percentage-wise
-            #region old
-            //Rectangle newroi = new Rectangle(oldroi.X + 20, oldroi.Y + 10, oldroi.Width - 40, oldroi.Height - 20); 
-            #endregion
 
-            #region new
+            #region calc ROI
             double scale = 0.33;
             Point center = new Point(oldroi.X + oldroi.Width / 2, oldroi.Y + oldroi.Height / 2);
             Size size = new Size((int)(oldroi.Size.Width * scale), (int)(oldroi.Size.Height * scale));
@@ -905,6 +849,7 @@ namespace SetVision.Vision
             }
         }
 
+        #region filter
         private static void FilterTree(ContourNode tree)
         {
             FilterNode(tree);
@@ -933,6 +878,7 @@ namespace SetVision.Vision
                     node.Children.Remove(child);
                 }
             }
-        }
+        } 
+        #endregion
     }
 }
