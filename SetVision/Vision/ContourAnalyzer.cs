@@ -175,8 +175,7 @@ namespace SetVision.Vision
                 node.Shape = Shape.Other;
             }
         }
-        #endregion
-
+        
         #region actual shapes
         public static bool IsDiamond(ContourNode node)
         {
@@ -330,6 +329,7 @@ namespace SetVision.Vision
 
         }
         #endregion
+        #endregion
 
         #region drawing
         public static void DrawContours(ContourNode node, Image<Bgr, Byte> canvas, System.Drawing.Color color)
@@ -378,15 +378,6 @@ namespace SetVision.Vision
                 DrawContours(child, canvas);
             }
         }
-
-        public static void ShowContour(Contour<Point> contour, Image<Bgr, Byte> original_image, string message)
-        {
-            Image<Bgr, Byte> canvas = original_image.Clone();
-            canvas.SetZero();
-
-            canvas.DrawPolyline(contour.ToArray(), true, new Bgr(255, 255, 255), 1);
-            ImageViewer.Show(canvas, message);
-        }
         #endregion
 
         #region images
@@ -395,7 +386,6 @@ namespace SetVision.Vision
             AssignImage(tree, image, setROI);
             foreach (ContourNode child in tree.Children)
             {
-                //AssignImage(child, image, setROI);
                 AssignImages(child, image, setROI);
             }
         }
@@ -414,7 +404,6 @@ namespace SetVision.Vision
         {
             mask = image.Convert<Gray, Byte>();
             mask.SetZero();
-            //Contour<Point> shifted = ShiftContour(contour, -3,-3);
             mask.Draw(contour, new Gray(255), new Gray(0), 2, -1);
 
             return image.And(new Bgr(255, 255, 255), mask);
@@ -431,6 +420,7 @@ namespace SetVision.Vision
                 AssignColors(child, image, settings);
             }
         }
+        
         private static void AssignColor(ContourNode node, Image<Bgr, Byte> image, Settings settings)
         {
             if (node.Contour.Area > 100
@@ -469,194 +459,7 @@ namespace SetVision.Vision
             node.averageHsv = avgHsv;
         }
 
-        #region old method
-        private static CardColor RecognizeColor(Image<Bgr, Byte> _image, ContourNode node)
-        {
-            /* Set the contour as the ROI of the image
-             * Make an empty image on which you fill the inner of the contour. This is the mask. 
-             * Now, AND-the mask with the image. 
-             * Calculate the average color of the image, for each channel. 
-             * 
-             * Then, do some thresholding on RGB and/or HSV. The values can be got from paint. 
-             * 
-             */
-            Contour<Point> contour = node.Contour;
-
-            #region extract color
-            Image<Gray, Byte> mask;
-            Image<Bgr, Byte> focusBgr = ExtractContourImage(_image, contour, out mask);
-
-            Image<Bgr, Byte> colfinder = focusBgr; // RemoveCardColor(node, focusBgr);
-
-            Bgr avgBgr = new Bgr();
-            MCvScalar scr1 = new MCvScalar();
-            colfinder.AvgSdv(out avgBgr, out scr1, mask);
-
-            Image<Hsv, Byte> focusHsv = colfinder.Convert<Hsv, Byte>();
-            Hsv avgHsv = new Hsv();
-            MCvScalar scr2 = new MCvScalar();
-            focusHsv.AvgSdv(out avgHsv, out scr2, mask);
-            #endregion
-
-            CardColor color = ClassifyColor(avgBgr, avgHsv);
-            CardColor color2 = CardColor.White;
-            if (!isGray(avgBgr, 20))
-            {
-                color2 = ClassifyBgr(avgBgr);
-            }
-
-            ContourNode parent = node.FindParent(Shape.Card, null, null);
-            double colDist = double.MaxValue;
-            if (parent != null)
-            {
-                colDist = ColorDistance(avgBgr, parent.averageBgr);
-            }
-            node.averageBgr = avgBgr;
-            node.averageHsv = avgHsv;
-            #region debug
-#if DEBUG
-            Image<Bgr, Byte> debug = new Image<Bgr, Byte>(250, 200);
-            debug.SetValue(avgBgr);
-            string bgrstr =
-                    ((int)avgBgr.Red).ToString() + ","
-                + ((int)avgBgr.Green).ToString() + ","
-                + ((int)avgBgr.Blue).ToString();
-
-            string hsvstr =
-                    ((int)avgHsv.Hue).ToString() + ","
-                + ((int)avgHsv.Satuation).ToString() + ","
-                + ((int)avgHsv.Value).ToString();
-
-            debug = debug.ConcateHorizontal(focusBgr);
-
-            Image<Bgr, Byte> rgbMask = new Image<Bgr, byte>(new Image<Gray, byte>[] { mask, mask, mask });
-            //debug = debug.ConcateHorizontal(rgbMask);
-            //ImageViewer.Show(debug, "rgb(" + bgrstr + ") hsv(" + hsvstr + ")"+"Classified as "+color.ToString());
-#endif
-            #endregion
-
-            focusBgr.ROI = contour.GetMinAreaRect().MinAreaRect();
-            node.Image = focusBgr;
-
-            return color;
-        }
-
-        private static CardColor ClassifyColor(Bgr avgBgr, Hsv avgHsv)
-        {
-            if (avgHsv.Satuation < 30)
-            {
-                return CardColor.White;
-            }
-            else if (avgHsv.Satuation < 45)
-            {
-                return CardColor.Other;
-            }
-            else if (avgBgr.Red > avgBgr.Blue && avgBgr.Red > avgBgr.Green)
-            {
-                return CardColor.Red;
-            }
-            else if (avgBgr.Green > avgBgr.Blue && avgBgr.Green > avgBgr.Red)
-            {
-                return CardColor.Green;
-            }
-            else if (avgBgr.Green < avgBgr.Blue && avgBgr.Green < avgBgr.Red)
-            {
-                return CardColor.Purple;
-            }
-            else
-            {
-                return CardColor.White;
-            }
-        }
-
-        private static void ShiftContour(ref Contour<Point> orig, int x, int y)
-        {
-            //for (int i = 0; i <= orig.Count<Point>()-1; i++)
-            //{
-            //    Point p = orig[i];
-            //    p.X += x;
-            //    p.Y += y;
-            //    orig[i] = p;
-            //}
-
-            //using (MemStorage storage = new MemStorage())
-            //{
-            //    Contour<Point> result = new Contour<Point>(storage);
-            //    foreach (Point p in orig)
-            //    {
-            //        result.Push(new Point(p.X + x, p.Y + y));
-            //    }
-
-            //    result.HNext = orig.HNext;
-            //    result.HPrev = orig.HPrev;
-            //    result.VNext = orig.VNext;
-            //    result.VPrev = orig.VPrev;
-
-            //    return result;
-            //}
-
-            //using (MemStorage storage = new MemStorage())
-            //{
-            //    Contour<Point> result = new Contour<Point>(storage);
-            //    result = orig;
-            //    //result.HNext = orig.HNext;
-            //    Point p = result.PopFront();
-            //    while(p != null)
-            //    {
-            //        result.Push(new Point(p.X + x, p.Y + y));
-            //        p = result.Pop();
-            //    }
-            //    return result;
-            //}
-        }
-
-        private static Image<Bgr, Byte> RemoveCardColor(ContourNode node, Image<Bgr, Byte> removeFrom)
-        {
-            ContourNode parentCard = node.FindParent(Shape.Card, null, null);
-            if (parentCard != null)
-            {
-                //Image<Bgr, Byte> eroded = removeFrom.Erode(1);
-                //Image<Bgr, Byte> thresholded = eroded.ThresholdBinary(parentCard.averageBgr, new Bgr(255,255,255));
-                //return thresholded;
-                Image<Gray, Byte> gray = removeFrom.Convert<Gray, Byte>();
-
-                Image<Bgr, Byte> subbed = removeFrom.AbsDiff(parentCard.averageBgr);
-                Image<Gray, Byte> gray2 = subbed.Convert<Gray, Byte>();
-
-                double[] mins, maxs;
-                Point[] minlocs, maxlocs;
-                gray2.MinMax(out mins, out maxs, out minlocs, out maxlocs);
-                Point maxloc = maxlocs[0];
-                Bgr colorAtMaxloc = removeFrom[maxloc];
-                Image<Bgr, Byte> maxcolor = removeFrom.Clone();
-                maxcolor.SetValue(colorAtMaxloc);
-
-                Image<Bgr, Byte> multiplier = new Image<Bgr, byte>(new Image<Gray, byte>[] { gray, gray, gray });
-                Image<Bgr, Byte> mul = removeFrom.Mul(multiplier, 0.015);
-                Image<Bgr, Byte> threshed = mul.ThresholdToZeroInv(new Bgr(254, 254, 254));
-                Image<Gray, Byte> mask = threshed.Convert<Gray, Byte>();
-                Image<Bgr, Byte> result = mul.And(new Bgr(255, 255, 255), mask);
-
-                multiplier._Erode(1);
-                result = result.Mul(multiplier, 0.005);
-
-                double[] mins2, maxs2;
-                Point[] minlocs2, maxlocs2;
-                result.MinMax(out mins2, out maxs2, out minlocs2, out maxlocs2);
-                double max2 = maxs2[0];
-                double scale = 255 / max2;
-                Image<Bgr, Byte> maxxed = result.Mul(scale);
-                maxxed._Dilate(1);
-                return maxxed;
-
-                //return maxcolor;
-            }
-            else
-            {
-                return removeFrom;
-            }
-        }
-
+        #region classification
         private static CardColor ClassifyBgr(Bgr col)
         {
             if (col.Red > col.Blue && col.Red > col.Green)
@@ -711,52 +514,6 @@ namespace SetVision.Vision
             {
                 return CardColor.Other;
             }
-        }
-        #endregion
-
-        #region new method
-        private static CardColor RecognizeColor(ContourNode node)
-        {
-            //First, flatten the images of all children to 1 image which we can analyze
-            Image<Bgr, Byte> flat = Flatten(node);
-            flat.ROI = node.Contour.BoundingRectangle;
-
-            Bgr bgr; MCvScalar scalar;
-            flat.AvgSdv(out bgr, out scalar);
-
-            Image<Hsv, Byte> hsvFlat = flat.Convert<Hsv, Byte>();
-            Hsv hsv; MCvScalar scalar2;
-            hsvFlat.AvgSdv(out hsv, out scalar2);
-
-            CardColor colorHsv = ClassifyHsv(hsv);
-            CardColor colorBgr = ClassifyBgr(bgr);
-            CardColor verdict = colorHsv;
-            if (verdict == CardColor.Other)
-            {
-                if (!isGray(bgr, 10))
-                {
-                    verdict = colorBgr;
-                }
-                else
-                {
-                    verdict = CardColor.White;
-                }
-            }
-            if (true)
-            {
-                Image<Bgr, Byte> debug = new Image<Bgr, byte>(500, 200);
-                debug.SetValue(bgr);
-                string BgrStr = String.Format("B{0}, G{1}, R{2}={3}", (int)bgr.Blue, (int)bgr.Green, (int)bgr.Red, colorBgr.ToString());
-                string HsvStr = String.Format("H{0}, S{1}, V{2}={3}", (int)hsv.Hue, (int)hsv.Satuation, (int)hsv.Value, colorHsv.ToString());
-                string total = BgrStr + " - " + HsvStr + " VERDICT=" + verdict.ToString();
-
-                MCvFont font = new MCvFont(FONT.CV_FONT_HERSHEY_PLAIN, 1, 1);
-                debug.Draw(total, ref font, new Point(20, 20), new Bgr(0, 0, 0));
-                //ImageViewer.Show(debug, total);
-
-                debug.Save("colordebug/" + total + ".png");
-            }
-            return verdict;
         }
 
         private static CardColor ClassifyHsv(Hsv hsv)
@@ -823,18 +580,6 @@ namespace SetVision.Vision
                     return CardColor.Other;
                 }
             }
-        }
-
-        private static Image<Bgr, Byte> Flatten(ContourNode tree)
-        {
-            Image<Bgr, Byte> flat = new Image<Bgr, byte>(tree.Image.Size);
-
-            flat = flat.Add(tree.Image);
-            foreach (ContourNode child in tree.Children)
-            {
-                flat = flat.Add(Flatten(child));
-            }
-            return flat;
         }
         #endregion
 
@@ -932,7 +677,6 @@ namespace SetVision.Vision
             }
             return verdict;
         }
-        #endregion
 
         public static Point FindBestColoredPixel(Image<Bgr, Byte> image, out Image<Bgr, Byte> debug)
         {
@@ -992,6 +736,7 @@ namespace SetVision.Vision
                               .First();
             return most;
         }
+        #endregion
 
         /// <summary>
         /// Check if R, G and B are closer than range together
@@ -1031,48 +776,6 @@ namespace SetVision.Vision
             {
                 node.Fill = DetermineFill2(node);
             }
-        }
-
-        private static Fill DetermineFill(ContourNode cardNode)
-        {
-            Fill fill = Fill.Other;
-            ContourNode outer = cardNode.Children[0];
-            ContourNode inner = outer.Children[0];
-
-            double card2blobBGRdist = ColorDistance(cardNode.averageBgr, inner.averageBgr);
-            double card2blobHSVdist = ColorDistance(cardNode.averageHsv, inner.averageHsv);
-
-            //Als card2blobBGRdist < 60: dan waarschijnlijk dashed, maar wel in de aangegeven kleur. 
-            //Dit moet als eerste gechecked worden
-
-            if ((inner.Color == CardColor.Other ||
-                    inner.Color == CardColor.Green ||
-                    inner.Color == CardColor.Red ||
-                    inner.Color == CardColor.Purple)
-                &&
-                card2blobBGRdist < 60)
-            {
-                fill = Fill.Dashed;
-            }
-            else if (inner.Color == CardColor.Green ||
-                inner.Color == CardColor.Red ||
-                inner.Color == CardColor.Purple)
-            {
-                fill = Fill.Solid;
-            }
-            else if (inner.Color == CardColor.White)
-            {
-                fill = Fill.Open;
-            }
-            else
-            {
-                fill = Fill.Other;
-            }
-
-            inner.Fill = fill;
-            outer.Fill = fill;
-
-            return fill;
         }
 
         private static Fill DetermineFill2(ContourNode cardNode)
