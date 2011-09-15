@@ -26,6 +26,12 @@ namespace SetVision.Learning
             parameters = p;
         }
 
+        public SVMClassifier(string filename)//SVMParams _parameters
+        {
+            model = new SVM();
+            model.Load(filename);
+        }
+
         public override void Train(IDictionary<float[], int> trainpairs)
         {
             Matrix<float> vectors;

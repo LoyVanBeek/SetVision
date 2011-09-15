@@ -8,6 +8,7 @@ using Emgu.CV.UI;
 using SetVision.Gamelogic;
 using SetVision.Learning;
 using SetVision.Exceptions;
+using System.Linq;
 
 namespace SetVision.Vision
 {
@@ -147,7 +148,7 @@ namespace SetVision.Vision
             AssignShape(tree);
             foreach (ContourNode child in tree.Children)
             {
-                AssignShape(child);
+                //AssignShape(child);
                 AssignShapes(child); //TODO: should be enabled
             }
         }
@@ -394,7 +395,7 @@ namespace SetVision.Vision
             AssignImage(tree, image, setROI);
             foreach (ContourNode child in tree.Children)
             {
-                AssignImage(child, image, setROI);
+                //AssignImage(child, image, setROI);
                 AssignImages(child, image, setROI);
             }
         }
@@ -426,7 +427,7 @@ namespace SetVision.Vision
             AssignColor(tree, image, settings);
             foreach (ContourNode child in tree.Children)
             {
-                AssignColor(child, image, settings);
+                //AssignColor(child, image, settings);
                 AssignColors(child, image, settings);
             }
         }
@@ -872,7 +873,9 @@ namespace SetVision.Vision
 
             //Trying something out
             CardColor colorBgr3 = ClassifyBgr2(bgr);
-            CardColor colorHsv3 = ClassifyHsv(hsv); ; //part of tryout 
+            CardColor colorHsv3 = ClassifyHsv(hsv); ; //part of tryout
+
+            CardColor most = FindMostOccuringColor(image, 1, CardColor.Other);
             #endregion
             
             CardColor verdict = colorBgr1;
@@ -962,6 +965,34 @@ namespace SetVision.Vision
             return max;
         }
 
+        public static CardColor FindMostOccuringColor(Image<Bgr, Byte> image, int step, params CardColor[] ignore)
+        {
+            Bgr black = new Bgr(0,0,0);
+
+            List<CardColor> colors = new List<CardColor>(image.Size.Height * image.Size.Width);
+            for (int x = 0; x < image.Size.Width; x++)
+            {
+                for (int y= 0; y < image.Size.Height; y++)
+                {
+                    Bgr bgr = image[y, x];
+                    if (!bgr.Equals(black))
+                    {
+                        CardColor col = classifier.Classify(bgr);
+                        if (!ignore.Contains(col))
+                        {
+                            colors.Add(col);
+                        } 
+                    }
+                }
+            }
+            CardColor most = (from item in colors 
+                              group item by item into g 
+                              orderby g.Count() descending 
+                              select g.Key)
+                              .First();
+            return most;
+        }
+
         /// <summary>
         /// Check if R, G and B are closer than range together
         /// </summary>
@@ -989,7 +1020,7 @@ namespace SetVision.Vision
             AssignFill(tree);
             foreach (ContourNode child in tree.Children)
             {
-                AssignFill(child);
+                //AssignFill(child);
                 AssignFills(child);
             }
         }
@@ -1176,7 +1207,7 @@ namespace SetVision.Vision
             FilterNode(tree);
             foreach (ContourNode child in tree.Children)
             {
-                FilterNode(child);
+                //FilterNode(child);
                 FilterTree(child);
             }
         }
